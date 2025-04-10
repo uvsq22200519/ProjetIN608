@@ -1,7 +1,6 @@
 import random
 import networkx as nx
 import community as community_louvain
-from community import modularity
 
 
 class Edge:
@@ -155,7 +154,6 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[1])
         line = file.readline()
 
-
 def initialisation(graph, num_individuals, max_comm_id=None):
     """
     Génère la population initiale P0 pour l'algorithme DECD.
@@ -190,9 +188,40 @@ def initialisation(graph, num_individuals, max_comm_id=None):
     return population
 
 
+def modularity(graph, partition):
+    """
+    Calculate the modularity of a graph.
+    :param graph:
+    :param partition: A dictionary where keys are node identifiers and values are community identifiers
+    """
+    modularity = 0
+    communities = {}
+    for node in partition:
+        comm_id = partition[node]
+        if comm_id not in communities:
+            communities[comm_id] = set()
+        communities[comm_id].add(node)
+    for comm_id, nodes in communities.items():
+        subgraph = Graph()
+        for node in nodes:
+            subgraph.add_vertex(node)
+        for node in nodes:
+            for neighbor in graph.get_vertex(node).get_neighbours():
+                if neighbor.identifier in nodes:
+                    subgraph.add_edge(subgraph.get_vertex(node), subgraph.get_vertex(neighbor.identifier))
+        nb_links_module = len(subgraph.get_edges())
+        degree_all_nodes_module = 0
+        for node in nodes:
+            degree_all_nodes_module += graph.get_vertex(node).degree
+        modularity += (
+            ( nb_links_module / len(graph.get_edges()) )
+            - ( ( degree_all_nodes_module / (2 * len(graph.get_edges())) ) ** 2)
+             )
+    return modularity
+
+
 part = initialisation(graphe, 100)
 j = 0
 m = 0
 L = len(graphe._edges)
-
-print(part)
+print(modularity(graphe, part[0]))
