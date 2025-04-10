@@ -2,6 +2,8 @@ import random
 import networkx as nx
 import community as community_louvain
 
+from collections import Counter
+
 
 class Edge:
     def __init__(self, identifier: int, vertex1: 'Vertex', vertex2: 'Vertex'):
@@ -154,6 +156,7 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[1])
         line = file.readline()
 
+
 def initialisation(graph, num_individuals, max_comm_id=None):
     """
     Génère la population initiale P0 pour l'algorithme DECD.
@@ -220,8 +223,50 @@ def modularity(graph, partition):
     return modularity
 
 
+def clean_solution(graph, community_assignment, n):
+    """
+    Fonction de nettoyage basée sur la variance communautaire CV(i).
+
+    :param graph: ton objet Graph
+    :param community_assignment: dict {node_id: community_id}
+    :param n: seuil de tolérance CV(i)
+    :return: nouvelle communauté nettoyée (dict)
+    """
+    cleaned_assignment = community_assignment.copy()
+
+    for vertex in graph.get_vertices().values():
+        neighbors = vertex.get_neighbours()
+        #print(neighbors)
+        if not neighbors:
+            continue  # sommet isolé
+        #print(community_assignment)
+        current_comm = community_assignment[vertex.identifier]
+
+        # Comptage des communautés des voisins
+        neighbor_comms = [
+            community_assignment[neighbor.identifier] for neighbor in neighbors
+        ]
+
+        # Calcul de CV(i)
+        neq_count = sum(1 for c in neighbor_comms if c != current_comm)
+        cv_i = neq_count / len(neighbors)
+
+        # Si CV(i) trop élevé : on remplace par la communauté majoritaire chez les voisins
+        if cv_i > n:
+            most_common_comm = Counter(neighbor_comms).most_common(1)[0][0]
+            cleaned_assignment[vertex.identifier] = most_common_comm
+
+    return cleaned_assignment
+
+
 part = initialisation(graphe, 100)
+clean = clean_solution(graphe, part[0], 0.35)
+print(part[0])
+print(clean)
 j = 0
 m = 0
 L = len(graphe._edges)
+
+#print(part)
+
 print(modularity(graphe, part[0]))
