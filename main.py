@@ -141,6 +141,7 @@ class Graph:
 graphe = Graph()
 
 
+
 with open("interaction_extraite_gavin2006.txt", 'r') as file:
     line = file.readline()
     lines = []
@@ -156,6 +157,7 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[1])
         line = file.readline()
 
+print(graphe.__repr__())
 
 def initialisation(graph, num_individuals, max_comm_id=None):
     """

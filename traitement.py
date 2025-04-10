@@ -15,7 +15,25 @@ with open("S000114310_physical_interactions.txt", 'r') as file1:
         while ligne:
             ligne = ligne.split("\t")
             nv_file1.write(ligne[1] + '\t' + ligne[3] + '\n')
-            ligne = file1.readline()"""
+            ligne = file1.readline()
+
+#supperssion doublons dans le fichier interaction_extraite_2006.txt
+with open('interaction_extraite_gavin2006.txt', 'r') as file:
+    lines = file.readlines()
+    lines = [line.strip() for line in lines]
+    lines = list(set(lines))
+with open('interaction_extraite_gavin2006.txt', 'w') as file:
+    for line in lines:
+        file.write(line + '\n')
+
+with open('interaction_extraite_2017.txt', 'r') as file:
+    lines = file.readlines()
+    lines = [line.strip() for line in lines]
+    lines = list(set(lines))
+with open('interaction_extraite_2017.txt', 'w') as file:
+    for line in lines:
+        file.write(line + '\n')
+"""
 
 def get_cyc2008() -> dict:
     """
@@ -33,5 +51,3 @@ def get_cyc2008() -> dict:
             cyc2008[ligne[2].replace('\n', '')].append(ligne[0])
             ligne = file.readline()
     return cyc2008
-
-print(get_cyc2008())
