@@ -263,10 +263,4 @@ part = initialisation(graphe, 100)
 clean = clean_solution(graphe, part[0], 0.35)
 print(part[0])
 print(clean)
-j = 0
-m = 0
-L = len(graphe._edges)
-
-#print(part)
-
 print(modularity(graphe, part[0]))
