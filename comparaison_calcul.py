@@ -9,11 +9,11 @@ def hit(a: list|set, b: list|set, threshold: float) -> list:
     """
     Check if the affinity between two vectors is greater than a threshold.
     """
-    hit = []
+    hit_list = []
     for i in range(len(a)):
         if affinity(a[i], b[i]) > threshold:
-            hit.append(a)
-    return hit
+            hit_list.append(a)
+    return hit_list
 
 def recall(a: list|set, b: list|set) -> float:
     """

@@ -1,4 +1,4 @@
-with open("interaction_data.txt", 'r') as file:
+"""with open("interaction_data.txt", 'r') as file:
     with open("interaction_extraite_2017.txt", 'w') as nv_file:
         ligne = file.readline()
         while ligne:
@@ -15,4 +15,23 @@ with open("S000114310_physical_interactions.txt", 'r') as file1:
         while ligne:
             ligne = ligne.split("\t")
             nv_file1.write(ligne[1] + '\t' + ligne[3] + '\n')
-            ligne = file1.readline()
+            ligne = file1.readline()"""
+
+def get_cyc2008() -> dict:
+    """
+    Get the CYCling 2008 dataset
+    :return: The CYCling 2008 dataset
+    """
+    cyc2008 = {}
+    with open("CYC2008.txt", 'r') as file:
+        file.readline()
+        ligne = file.readline()
+        while ligne:
+            ligne = ligne.split("\t")
+            if ligne[2].replace('\n', '') not in cyc2008:
+                cyc2008[ligne[2].replace('\n', '')] = []
+            cyc2008[ligne[2].replace('\n', '')].append(ligne[0])
+            ligne = file.readline()
+    return cyc2008
+
+print(get_cyc2008())
