@@ -1,146 +1,10 @@
 import random
-import networkx as nx
-import community as community_louvain
-
 from collections import Counter
+from copy import copy
 
-
-class Edge:
-    def __init__(self, identifier: int, vertex1: 'Vertex', vertex2: 'Vertex'):
-        """
-        :param vertex1: First vertex
-        :param vertex2: Second vertex
-        """
-        self.identifier = identifier
-        self.vertex1 = vertex1
-        self.vertex2 = vertex2
-
-    def __repr__(self):
-        return f"Edge({self.vertex1.identifier}, {self.vertex2.identifier})"
-
-    def __eq__(self, other):
-        return self.identifier == other.identifier
-
-
-class Vertex:
-    def __init__(self, identifier):
-        self.edges: list[Edge] = []
-        self.identifier = identifier
-
-    def get_neighbours(self) -> list['Vertex']:
-        """
-        Get the neighbours of the vertex
-        :return: The neighbours of the vertex
-        """
-        neighbours = []
-        for edge in self.edges:
-            if edge.vertex1.identifier == self.identifier:
-                neighbours.append(edge.vertex2)
-            else:
-                neighbours.append(edge.vertex1)
-        return neighbours
-
-    @property
-    def degree(self) -> int:
-        """
-        Get the degree of the vertex
-        :return: The degree of the vertex
-        """
-        return len(self.edges)
-
-    def __repr__(self) -> str:
-        return f"Vertex({self.identifier})"
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, Vertex):
-            return self.identifier == other.identifier
-        raise TypeError(f"Need Vertex got {type(other)}")
-
-
-class Graph:
-    def __init__(self, is_directed=False):
-        self._vertices: dict[object, Vertex] = {}
-        self._edges: list[Edge] = []
-        self.is_directed = is_directed
-
-    def get_vertex(self, identifier: int) -> Vertex:
-        """
-        Get a vertex by its identifier
-        :param identifier: The identifier of the vertex
-        :return: The vertex
-        """
-        return self._vertices[identifier]
-
-    def get_edge(self, identifier: int) -> Edge:
-        """
-        Get an edge by its identifier
-        :param identifier: The identifier of the edge
-        :return: The edge
-        """
-        return self._edges[identifier]
-
-    def get_vertices(self) -> dict[object, Vertex]:
-        """
-        Get a copy of the vertices of the graph
-        :return: The vertices of the graph
-        """
-        return self._vertices.copy()
-
-    def get_edges(self) -> list[Edge]:
-        """
-        Get a copy of the edges of the graph
-        :return: The edges of the graph
-        """
-        return self._edges.copy()
-
-    def add_edge(self, vertex1: Vertex, vertex2: Vertex) -> Edge:
-        """
-        :param vertex1: First vertex
-        :param vertex2: Second vertex
-        :param weight: The weight of the edge
-        :return: The edge that was added
-        """
-        edge = Edge(len(self._edges), vertex1, vertex2)
-        vertex1.edges.append(edge)
-        vertex2.edges.append(edge)
-        self._edges.append(edge)
-        return edge
-
-    def add_vertex(self, identifier=None) -> Vertex:
-        """
-        Add a vertex to the graph
-        :return: The vertex that was added
-        """
-        identifier = identifier
-        vertex = Vertex(identifier)
-        self._vertices[identifier] = vertex
-        return vertex
-
-    @staticmethod
-    def load_file(path):
-        """
-        Load a graph from a file
-        :param path: The path to the file
-        :return: The graph contained in the file
-        """
-        raise NotImplementedError()
-
-    def save_to_file(self, path):
-        """
-        Save the graph to a file
-        :param path: The path to the file
-        :return: None
-        """
-        raise NotImplementedError()
-
-    def __repr__(self):
-        return f"Graph({len(self._vertices)} vertices, {len(self._edges)} edges)"
-
-
+from classes_graph import Graph
 
 graphe = Graph()
-
-
 
 with open("interaction_extraite_gavin2006.txt", 'r') as file:
     line = file.readline()
@@ -157,39 +21,29 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[1])
         line = file.readline()
 
-print(graphe.__repr__())
 
-def initialisation(graph, num_individuals, max_comm_id=None):
+def initialisation(graph, num_individuals):
     """
     Génère la population initiale P0 pour l'algorithme DECD.
-
-    :param graph: ton objet Graph personnalisé
+    :param graph: le graphe d'intéraction
     :param num_individuals: nombre d'individus (partitions) à générer
-    :param max_comm_id: nombre maximum de communautés (facultatif)
-    :return: liste d'individus (chaque individu = {node_id: commID})
+    :return: liste d'individus (chaque individu = Graph)
     """
     population = []
-    vertices = list(graph.get_vertices().values())
-    n = len(vertices)
-
-    if max_comm_id is None:
-        max_comm_id = n  # au max, chaque nœud peut avoir sa propre communauté
-
+    max_comm_id = len(graph.get_vertices())  # au max, chaque nœud peut avoir sa propre communauté
     for _ in range(num_individuals):
-        # 1. Initialisation aléatoire
-        individual = {v.identifier: random.randint(0, max_comm_id - 1) for v in vertices}
-
+        new_graph = copy(graph)
+        vertices = list(new_graph.get_vertices().values())
+        for v in vertices:
+            v.community_id = random.randint(0, max_comm_id - 1)
         # 2. Renforcement des communautés par voisinage
         for v in vertices:
-            comm_id = individual[v.identifier]
             for neighbor in v.get_neighbours():
                 # On donne à chaque voisin le même commID avec une certaine probabilité
                 # ou directement si tu veux forcer à regrouper
                 if random.random() < 0.5:  # paramétrable
-                    individual[neighbor.identifier] = comm_id
-
-        population.append(individual)
-
+                    neighbor.community_id = v.community_id
+        population.append(new_graph)
     return population
 
 
@@ -219,23 +73,21 @@ def modularity(graph, partition):
         for node in nodes:
             degree_all_nodes_module += graph.get_vertex(node).degree
         modularity += (
-            ( nb_links_module / len(graph.get_edges()) )
-            - ( ( degree_all_nodes_module / (2 * len(graph.get_edges())) ) ** 2)
-             )
+                (nb_links_module / len(graph.get_edges()))
+                - ((degree_all_nodes_module / (2 * len(graph.get_edges()))) ** 2)
+        )
     return modularity
 
 
 def clean_solution(graph, community_assignment, n):
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
-
     :param graph: ton objet Graph
     :param community_assignment: dict {node_id: community_id}
     :param n: seuil de tolérance CV(i)
     :return: nouvelle communauté nettoyée (dict)
     """
     cleaned_assignment = community_assignment.copy()
-
     for vertex in graph.get_vertices().values():
         neighbors = vertex.get_neighbours()
         #print(neighbors)
@@ -243,26 +95,105 @@ def clean_solution(graph, community_assignment, n):
             continue  # sommet isolé
         #print(community_assignment)
         current_comm = community_assignment[vertex.identifier]
-
         # Comptage des communautés des voisins
         neighbor_comms = [
             community_assignment[neighbor.identifier] for neighbor in neighbors
         ]
-
         # Calcul de CV(i)
         neq_count = sum(1 for c in neighbor_comms if c != current_comm)
         cv_i = neq_count / len(neighbors)
-
         # Si CV(i) trop élevé : on remplace par la communauté majoritaire chez les voisins
         if cv_i > n:
             most_common_comm = Counter(neighbor_comms).most_common(1)[0][0]
             cleaned_assignment[vertex.identifier] = most_common_comm
-
     return cleaned_assignment
+
+
+def recombine(xi, vi, CR, graph):
+    """
+    Recombine deux individus xi (cible) et vi (mutant) selon la stratégie DECD.
+
+    :param xi: dict {node_id: community_id} – solution cible
+    :param vi: dict {node_id: community_id} – solution mutante
+    :param CR: float – taux de recombinaison (probabilité de changer de communauté)
+    :param graph: objet Graph – structure du graphe
+    :return: dict – nouvel individu ui
+    """
+    ui = xi.copy()
+    for node in graph.get_vertices():
+        node_id = node
+        if random.random() < CR:
+            # Communauté cible depuis vi
+            new_comm = vi[node_id]
+            # Trouver tous les nœuds dans la même communauté que node_id dans xi
+            old_comm = ui[node_id]
+            same_comm_nodes = [n for n, c in ui.items() if c == old_comm]
+            # Appliquer le changement de communauté à tous ces nœuds
+            for n in same_comm_nodes:
+                ui[n] = new_comm
+    return ui
+
+
+def crossover(X, V, CR):
+    NP = len(X)
+    n = len(X[0])
+    U = [x.copy() for x in X]  # Initialize trial population as copies of current population
+    for i in range(NP):
+        jrand = random.randint(0, n - 1)  # Random index for forced crossover
+        for j in range(n):
+            rand_val = random.random()
+            if rand_val <= CR or j == jrand:
+                vi_j = V[i][j]
+                # Find indices (nodes) in vi assigned to the same community vi_j
+                community_nodes = [k for k in range(n) if V[i][k] == vi_j]
+                # Assign all those positions in ui to community vi_j
+                for k in community_nodes:
+                    U[i][k] = vi_j
+                # Optional: you can add a `break` if you only want to apply the change once
+    return U
+
+
+NP = 200
+t = 0
+QX = []
+QU = []
+NB = 10
+F = 0.9
+CR = 0.3
+n = 0.35
+NB = 200
+P = initialisation(graphe, NP)
+for i in range(1, NP):
+    QX[i] = modularite(P[i])
+while t < NB:
+    V = mutation(P, F)
+    V = nettoyage(V, n)
+    U = recombine(P)
+    U = nettoyage(U, n)
+    for i in range(1,NP):
+        QU[i] = modularite(U[i])
+        if QX[i] > QU[i]:
+            P[i] = xi
+        else:
+            P[i] = ui
+    t += 1
+Xbest = P[1]
+for i in range(2, NP):
+    if modularite(Xbest) < modularite(P[i]):
+        Xbest = P[i]
+
+
+"""
+Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
+rand/1, CR : la probabilité de croisement pour le
+croisement binomiale de solution, η : le seuil pour le
+nettoyage, NB : le nombre d’itérations
+"""
 
 
 part = initialisation(graphe, 100)
 clean = clean_solution(graphe, part[0], 0.35)
-print(part[0])
-print(clean)
+recombine()
+#print(part[0])
+#print(clean)
 print(modularity(graphe, part[0]))
