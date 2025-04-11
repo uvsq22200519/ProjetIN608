@@ -159,6 +159,6 @@ nettoyage, NB : le nombre d’itérations
 """
 
 
-part = initialisation(graphe, 100)
+part = initialisation(graphe, 200)
 """clean = clean_solution(graphe, part[0], 0.35)"""
 print(part[0].modularity)

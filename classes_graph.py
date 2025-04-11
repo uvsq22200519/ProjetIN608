@@ -163,13 +163,13 @@ class Graph:
             for node in nodes:
                 subgraph.add_vertex(node)
             for node in nodes:
-                for neighbor in self.get_vertex(node).get_neighbours():
-                    if neighbor.identifier in nodes:
-                        subgraph.add_edge(subgraph.get_vertex(node), subgraph.get_vertex(neighbor.identifier))
+                for neighbor in node.get_neighbours():
+                    if neighbor in nodes:
+                        subgraph.add_edge(node, neighbor)
             nb_links_module = len(subgraph.get_edges())
             degree_all_nodes_module = 0
             for node in nodes:
-                degree_all_nodes_module += self.get_vertex(node).degree
+                degree_all_nodes_module += node.degree
             modularity += (
                     (nb_links_module / len(self.get_edges()))
                     - ((degree_all_nodes_module / (2 * len(self.get_edges()))) ** 2)

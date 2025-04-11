@@ -38,7 +38,7 @@ with open('interaction_extraite_2017.txt', 'w') as file:
 def get_cyc2008() -> dict:
     """
     Get the CYCling 2008 dataset
-    :return: The CYCling 2008 dataset
+    :return: The CYCling 2008 dataset as a dictionary with the keys as the complex name and the values as the list of protein identifiers
     """
     cyc2008 = {}
     with open("CYC2008.txt", 'r') as file:
