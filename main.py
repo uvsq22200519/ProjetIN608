@@ -47,38 +47,6 @@ def initialisation(graph, num_individuals):
     return population
 
 
-def modularity(graph, partition):
-    """
-    Calculate the modularity of a graph.
-    :param graph:
-    :param partition: A dictionary where keys are node identifiers and values are community identifiers
-    """
-    modularity = 0
-    communities = {}
-    for node in partition:
-        comm_id = partition[node]
-        if comm_id not in communities:
-            communities[comm_id] = set()
-        communities[comm_id].add(node)
-    for comm_id, nodes in communities.items():
-        subgraph = Graph()
-        for node in nodes:
-            subgraph.add_vertex(node)
-        for node in nodes:
-            for neighbor in graph.get_vertex(node).get_neighbours():
-                if neighbor.identifier in nodes:
-                    subgraph.add_edge(subgraph.get_vertex(node), subgraph.get_vertex(neighbor.identifier))
-        nb_links_module = len(subgraph.get_edges())
-        degree_all_nodes_module = 0
-        for node in nodes:
-            degree_all_nodes_module += graph.get_vertex(node).degree
-        modularity += (
-                (nb_links_module / len(graph.get_edges()))
-                - ((degree_all_nodes_module / (2 * len(graph.get_edges()))) ** 2)
-        )
-    return modularity
-
-
 def clean_solution(graph, community_assignment, n):
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
@@ -163,15 +131,15 @@ CR = 0.3
 n = 0.35
 NB = 200
 P = initialisation(graphe, NP)
-for i in range(1, NP):
-    QX[i] = modularite(P[i])
+"""for i in range(1, NP):
+    QX[i] = modularity(P[i])
 while t < NB:
     V = mutation(P, F)
     V = nettoyage(V, n)
     U = recombine(P)
     U = nettoyage(U, n)
     for i in range(1,NP):
-        QU[i] = modularite(U[i])
+        QU[i] = modularity(U[i])
         if QX[i] > QU[i]:
             P[i] = xi
         else:
@@ -181,7 +149,7 @@ Xbest = P[1]
 for i in range(2, NP):
     if modularite(Xbest) < modularite(P[i]):
         Xbest = P[i]
-
+"""
 
 """
 Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
@@ -192,8 +160,5 @@ nettoyage, NB : le nombre d’itérations
 
 
 part = initialisation(graphe, 100)
-clean = clean_solution(graphe, part[0], 0.35)
-recombine()
-#print(part[0])
-#print(clean)
-print(modularity(graphe, part[0]))
+"""clean = clean_solution(graphe, part[0], 0.35)"""
+print(part[0].modularity)

@@ -1,3 +1,6 @@
+from networkx.classes import subgraph
+
+
 class Edge:
     def __init__(self, identifier: int, vertex1: 'Vertex', vertex2: 'Vertex'):
         """
@@ -20,6 +23,10 @@ class Vertex:
         self.edges: list[Edge] = []
         self.identifier = identifier
         self.community_id: int | None = None
+        self._hash_value = self._calculate_hash()
+
+    def _calculate_hash(self):
+        return hash(self.identifier)
 
     def get_neighbours(self) -> list['Vertex']:
         """
@@ -49,6 +56,9 @@ class Vertex:
         if isinstance(other, Vertex):
             return self.identifier == other.identifier
         raise TypeError(f"Need Vertex got {type(other)}")
+
+    def __hash__(self):
+        return self._hash_value
 
 
 class Graph:
@@ -133,6 +143,38 @@ class Graph:
         for edge in self.get_edges():
             new_graph.add_edge(new_graph.get_vertex(edge.vertex1.identifier), new_graph.get_vertex(edge.vertex2.identifier))
         return new_graph
+
+    @property
+    def modularity(self) -> float:
+        """
+        Calculate the modularity of a graph.
+        :param graph:
+        """
+        modularity = 0
+        communities = {}
+        vertices = list(self.get_vertices().values())
+        for v in vertices:
+            comm_id = v.community_id
+            if comm_id not in communities:
+                communities[comm_id] = set()
+            communities[comm_id].add(v)
+        for comm_id, nodes in communities.items():
+            subgraph = Graph()
+            for node in nodes:
+                subgraph.add_vertex(node)
+            for node in nodes:
+                for neighbor in self.get_vertex(node).get_neighbours():
+                    if neighbor.identifier in nodes:
+                        subgraph.add_edge(subgraph.get_vertex(node), subgraph.get_vertex(neighbor.identifier))
+            nb_links_module = len(subgraph.get_edges())
+            degree_all_nodes_module = 0
+            for node in nodes:
+                degree_all_nodes_module += self.get_vertex(node).degree
+            modularity += (
+                    (nb_links_module / len(self.get_edges()))
+                    - ((degree_all_nodes_module / (2 * len(self.get_edges()))) ** 2)
+            )
+        return modularity
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self._edges)} edges)"
