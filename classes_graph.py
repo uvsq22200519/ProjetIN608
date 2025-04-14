@@ -174,8 +174,8 @@ class Graph:
 
     def __copy__(self) -> 'Graph':
         new_graph = Graph()
-        for vertex in self.get_vertices().keys():
-            new_graph.add_vertex(vertex)
+        for vertex in self.get_vertices():
+            new_graph.add_vertex(vertex.identifier)
         for edge in self.get_edges():
             new_graph.add_edge(new_graph.get_vertex(edge.vertex1.identifier), new_graph.get_vertex(edge.vertex2.identifier))
         return new_graph
@@ -188,7 +188,7 @@ class Graph:
         """
         modularity = 0
         communities = {}
-        vertices = list(self.get_vertices().values())
+        vertices = list(self.get_vertices())
         for v in vertices:
             comm_id = v.community_id
             if comm_id not in communities:

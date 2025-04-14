@@ -44,7 +44,7 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
     return population
 
 
-def mutation(population: list, f: float) -> list:
+def mutation(population: list[Graph], f: float) -> list[Graph]:
     """
 
     :param population:
@@ -54,15 +54,15 @@ def mutation(population: list, f: float) -> list:
     pop_mutante = []
     j = 0
     while len(population) != len(pop_mutante):
-        x1 = np.array(random.choice(population).to_genotype)
-        x2 = np.array(random.choice(population).to_genotype)
-        x3 = np.array(random.choice(population).to_genotype)
-        while x1 == x2 or x2 == x3 or x3 == x1:
-            x1 = np.array(random.choice(population).to_genotype)
-            x2 = np.array(random.choice(population).to_genotype)
-            x3 = np.array(random.choice(population).to_genotype)
+        x1 = np.array(random.choice(population).to_genotype())
+        x2 = np.array(random.choice(population).to_genotype())
+        x3 = np.array(random.choice(population).to_genotype())
+        while x1.tolist() == x2.tolist() or x2.tolist() == x3.tolist() or x3.tolist() == x1.tolist():
+            x1 = np.array(random.choice(population).to_genotype())
+            x2 = np.array(random.choice(population).to_genotype())
+            x3 = np.array(random.choice(population).to_genotype())
         v = (x1 + f * (x2 - x3)).tolist()
-        genotype_j = population[j].to_genotype
+        genotype_j = population[j].to_genotype()
         lower_bound = min(genotype_j)
         upper_bound = max(genotype_j)
         for i in range(len(v)):
@@ -73,6 +73,7 @@ def mutation(population: list, f: float) -> list:
         j += 1
         pop_mutante.append(v)
     return pop_mutante
+
 
 def clean_solution(graph: Graph, seuil: int) -> None:
     """
@@ -122,7 +123,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     return u
 
 
-def DECD():
+def DECD(graph):
     """
      Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
      rand/1, CR : la probabilité de croisement pour le
@@ -138,7 +139,7 @@ def DECD():
     P = initialisation(graphe, NP)
     Qx, Qu = [], []
     for i in range(NP):
-        Qx[i] = P[i].modularity
+        Qx.append(P[i].modularity)
     while t < NB:
         V = mutation(P, F)
         for i in range(len(V)):
@@ -154,9 +155,11 @@ def DECD():
     for i in range(1, NP):
         if Xbest.modularity < P[i].modularity:
             Xbest = P[i]
+    print(Xbest)
+    print(Xbest.modularity)
 
 
-part = initialisation(graphe, 200)
-"""clean = clean_solution(graphe, part[0], 0.35)"""
-clean_solution(graphe, 50)
+DECD(graphe)
+
+#recombinaison = crossover(graphe, graphe, 0.3)
 # recombinaison = crossover(graphe, graphe, 0.3)
