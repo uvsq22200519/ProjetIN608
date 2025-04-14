@@ -2,6 +2,8 @@ import random
 from collections import Counter
 from copy import copy
 
+from networkx.classes import neighbors
+
 from classes_graph import Graph
 
 graphe = Graph()
@@ -45,15 +47,26 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
     return population
 
 
-def clean_solution(graph: Graph, n: int, rf: int):
+def clean_solution(graph: Graph, seuil: int) -> None:
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
-    :param graph: ton objet Graph
-    :param n: seuil de tolérance CV(i)
-    :return: nouvelle communauté nettoyée (dict)
+    :param graph:
+    :param seuil:
     """
-    pass
-    return cleaned_assignment
+    nodes = graph.get_vertices().values()
+    for node in nodes:
+        if random.random() < 0.1:
+            if node.community_variance > seuil:
+                neighborhood = {}
+                for neighbor in node.get_neighbours():
+                    if neighbor.community_id in neighborhood.keys():
+                        neighborhood[neighbor.community_id] += 1
+                    else:
+                        neighborhood[neighbor.community_id] = 1
+                comm_major = max(neighborhood, key=neighborhood.get)
+                for neighbor in neighborhood.values():
+                    neighbor.community_id = comm_major
+    return
 
 
 def crossover(x: Graph, v: Graph, CR: float) -> Graph:
