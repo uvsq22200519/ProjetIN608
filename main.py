@@ -1,6 +1,6 @@
 import random
 from copy import copy
-
+import numpy as np
 from classes_graph import Graph
 
 graphe = Graph()
@@ -43,6 +43,36 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
         population.append(new_graph)
     return population
 
+
+def mutation(population: list, f: float) -> list:
+    """
+
+    :param population:
+    :param f:
+    :return:
+    """
+    pop_mutante = []
+    j = 0
+    while len(population) != len(pop_mutante):
+        x1 = np.array(random.choice(population).to_genotype)
+        x2 = np.array(random.choice(population).to_genotype)
+        x3 = np.array(random.choice(population).to_genotype)
+        while x1 == x2 or x2 == x3 or x3 == x1:
+            x1 = np.array(random.choice(population).to_genotype)
+            x2 = np.array(random.choice(population).to_genotype)
+            x3 = np.array(random.choice(population).to_genotype)
+        v = (x1 + f * (x2 - x3)).tolist()
+        genotype_j = population[j].to_genotype
+        lower_bound = min(genotype_j)
+        upper_bound = max(genotype_j)
+        for i in range(len(v)):
+            if v[i] < lower_bound:
+                v[i] = (2 * lower_bound) - v[i]
+            elif v[i] > upper_bound:
+                v[i] = (2 * upper_bound) - v[i]
+        j += 1
+        pop_mutante.append(v)
+    return pop_mutante
 
 def clean_solution(graph: Graph, seuil: int) -> None:
     """

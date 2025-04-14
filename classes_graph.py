@@ -21,10 +21,10 @@ class Edge:
 
 
 class Vertex:
-    def __init__(self, identifier):
+    def __init__(self, identifier: str, community_id: int | None = None):
         self.edges: list[Edge] = []
         self.identifier = identifier
-        self.community_id: int | None = None
+        self.community_id = community_id
         self._hash_value = self._calculate_hash()
 
     def _calculate_hash(self):
@@ -75,7 +75,7 @@ class Graph:
         self._edges: list[Edge] = []
         self.is_directed = is_directed
 
-    def get_vertex(self, identifier: int) -> Vertex:
+    def get_vertex(self, identifier: str) -> Vertex:
         """
         Get a vertex by its identifier
         :param identifier: The identifier of the vertex
@@ -83,7 +83,7 @@ class Graph:
         """
         return self._vertices[identifier]
 
-    def get_vertex_comm(self, identifier: int) -> int:
+    def get_vertex_comm(self, identifier: str) -> int:
         return self.get_vertex(identifier).community_id
 
     def get_edge(self, identifier: int) -> Edge:
@@ -120,15 +120,40 @@ class Graph:
         self._edges.append(edge)
         return edge
 
-    def add_vertex(self, identifier=None) -> Vertex:
+    def add_vertex(self, identifier: str=None, comm_id: int|None = None) -> Vertex:
         """
         Add a vertex to the graph
         :return: The vertex that was added
         """
         identifier = identifier
-        vertex = Vertex(identifier)
+        vertex = Vertex(identifier, community_id=comm_id)
         self._vertices[identifier] = vertex
         return vertex
+
+    def to_genotype(self) -> list:
+        """
+        Return a genotype representation of the graph: a list corresponding to the community of the vertices of the
+        graph in the alphabetical order of the vertex identifiers
+        :return:
+        """
+        vertices = self.get_vertices()
+        genotype_dict = dict(sorted({vertex.identifier: vertex.community_id for vertex in vertices}.items()))
+        return list(genotype_dict.values())
+
+    def import_genotype(self, genotype: list) -> None:
+        """
+        Change the commID of the vertex according to the genotype. CAUTION: the genotype must be a list of commID
+        sorted by the alphabetical order of the vertex identifiers
+        :param genotype: list of commID sorted by the alphabetical order of the vertex identifiers
+        :return:
+        """
+        sorted_vertices = sorted([str(vertex.identifier) for vertex in self.get_vertices()])
+        if len(genotype) != len(sorted_vertices):
+            raise ValueError("The length of genotype and the number of vertex in the graph must be the same")
+        for i in range(len(genotype)):
+            vertex = self.get_vertex(sorted_vertices[i])
+            vertex.community_id = genotype[i]
+
 
     @staticmethod
     def load_file(path):
@@ -169,6 +194,8 @@ class Graph:
             if comm_id not in communities:
                 communities[comm_id] = set()
             communities[comm_id].add(v)
+        if len(self.get_edges()) == 0:
+            return 1
         for comm_id, nodes in communities.items():
             subgraph = Graph()
             for node in nodes:
