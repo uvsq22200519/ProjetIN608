@@ -29,6 +29,7 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
     :param num_individuals: nombre d'individus (partitions) à générer
     :return: liste d'individus (chaque individu = Graph)
     """
+    start = time.time()
     population = []
     max_comm_id = len(graph.get_vertices())  # la valeur max pour la num de communauté est le nb de sommet
     for _ in range(num_individuals):
@@ -42,6 +43,7 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
                 for neighbor in v.get_neighbours():
                     neighbor.community_id = v.community_id
         population.append(new_graph)
+    print(f"Initialisation {time.time()-start}")
     return population
 
 
@@ -52,6 +54,7 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
     :param f:
     :return:
     """
+    start = time.time()
     pop_mutante = []
     j = 0
     while len(population) != len(pop_mutante):
@@ -75,6 +78,7 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
         mutant.import_genotype(v)
         pop_mutante.append(mutant)
         j += 1
+    print(f"Mutation {time.time()-start}")
     return pop_mutante
 
 
@@ -84,6 +88,7 @@ def clean_solution(graph: Graph, seuil: int) -> None:
     :param graph:
     :param seuil:
     """
+    start = time.time()
     nodes = graph.get_vertices()
     for node in nodes:
         if random.random() < 0.1:
@@ -98,6 +103,7 @@ def clean_solution(graph: Graph, seuil: int) -> None:
                 comm_major = max(neighborhood_commid, key=neighborhood_commid.get)
                 for neighbor in neighborhood:
                     neighbor.community_id = comm_major
+    print(f"Clean {time.time()-start}")
     return
 
 
@@ -110,6 +116,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
     :return: Graph() : nouvel individu u
     """
+    start = time.time()
     u = copy(x)
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
@@ -124,6 +131,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
                 if n.identifier in id_comm_identique:
                     n.community_id = comm_cible
         j += 1
+    print(f"Crossover {time.time()-start}")
     return u
 
 
@@ -138,21 +146,21 @@ def DECD(graph):
     F = 0.9
     CR = 0.3
     n = 0.35
-    NB = 200
+    NB = 2
     t = 0
     P = initialisation(graphe, NP)
-    Qx, Qu = [], [None for _ in range(NB)]
+    Qx, Qu = [], []
     for i in range(NP):
         Qx.append(P[i].modularity)
     while t < NB:
-        print('gération', t)
+        print('génération', t)
         V = mutation(P, F)
         for i in range(len(V)):
             clean_solution(V[i], n)
             crossover(V[i], P[i], CR)
             clean_solution(V[i], n)
         for i in range(NP):
-            Qu[i] = V[i].modularity
+            Qu.append(V[i].modularity)
             if Qx[i] <= Qu[i]:
                 P[i] = V[i]
         t += 1
@@ -166,5 +174,4 @@ def DECD(graph):
 
 DECD(graphe)
 
-#recombinaison = crossover(graphe, graphe, 0.3)
 # recombinaison = crossover(graphe, graphe, 0.3)
