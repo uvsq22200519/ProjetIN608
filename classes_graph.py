@@ -94,12 +94,12 @@ class Graph:
         """
         return self._edges[identifier]
 
-    def get_vertices(self) -> dict[object, Vertex]:
+    def get_vertices(self) -> list[Vertex]:
         """
         Get a copy of the vertices of the graph
         :return: The vertices of the graph
         """
-        return self._vertices.copy()
+        return list(self._vertices.copy().values())
 
     def get_edges(self) -> list[Edge]:
         """

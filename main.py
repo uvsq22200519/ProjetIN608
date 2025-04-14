@@ -1,8 +1,5 @@
 import random
-from collections import Counter
 from copy import copy
-
-from networkx.classes import neighbors
 
 from classes_graph import Graph
 
@@ -35,7 +32,7 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
     max_comm_id = len(graph.get_vertices())  # la valeur max pour la num de communauté est le nb de sommet
     for _ in range(num_individuals):
         new_graph = copy(graph)
-        vertices = list(new_graph.get_vertices().values())
+        vertices = new_graph.get_vertices()
         for v in vertices:
             v.community_id = random.randint(0, max_comm_id - 1)
         # 2. Renforcement des communautés par voisinage
@@ -53,7 +50,7 @@ def clean_solution(graph: Graph, seuil: int) -> None:
     :param graph:
     :param seuil:
     """
-    nodes = graph.get_vertices().values()
+    nodes = graph.get_vertices()
     for node in nodes:
         if random.random() < 0.1:
             if node.community_variance > seuil:
@@ -79,11 +76,11 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :return: Graph() : nouvel individu u
     """
     u = copy(x)
-    sommets = x.get_vertices().values()
+    sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets)-1)
     j = 0
-    sommets_u = u.get_vertices().values()
-    sommets_v = v.get_vertices().values()
+    sommets_u = u.get_vertices()
+    sommets_v = v.get_vertices()
     for node in sommets:
         if random.random() < CR or j == j_rand:
             comm_cible = v.get_vertex_comm(node.identifier)
@@ -99,7 +96,6 @@ NP = 200
 t = 0
 QX = []
 QU = []
-NB = 10
 F = 0.9
 CR = 0.3
 n = 0.35
@@ -135,4 +131,5 @@ nettoyage, NB : le nombre d’itérations
 
 part = initialisation(graphe, 200)
 """clean = clean_solution(graphe, part[0], 0.35)"""
-recombinaison = crossover(graphe, graphe, 0.3)
+clean_solution(graphe, 50)
+#recombinaison = crossover(graphe, graphe, 0.3)
