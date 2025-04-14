@@ -22,7 +22,7 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         line = file.readline()
 
 
-def initialisation(graph, num_individuals):
+def initialisation(graph: Graph, num_individuals: int) -> list:
     """
     Génère la population initiale P0 pour l'algorithme DECD.
     :param graph: le graphe d'intéraction
@@ -30,7 +30,7 @@ def initialisation(graph, num_individuals):
     :return: liste d'individus (chaque individu = Graph)
     """
     population = []
-    max_comm_id = len(graph.get_vertices())  # au max, chaque nœud peut avoir sa propre communauté
+    max_comm_id = len(graph.get_vertices())  # la valeur max pour la num de communauté est le nb de sommet
     for _ in range(num_individuals):
         new_graph = copy(graph)
         vertices = list(new_graph.get_vertices().values())
@@ -38,87 +38,48 @@ def initialisation(graph, num_individuals):
             v.community_id = random.randint(0, max_comm_id - 1)
         # 2. Renforcement des communautés par voisinage
         for v in vertices:
-            for neighbor in v.get_neighbours():
-                # On donne à chaque voisin le même commID avec une certaine probabilité
-                # ou directement si tu veux forcer à regrouper
-                if random.random() < 0.5:  # paramétrable
+            if random.random() < 0.1:
+                for neighbor in v.get_neighbours():
                     neighbor.community_id = v.community_id
         population.append(new_graph)
     return population
 
 
-def clean_solution(graph, community_assignment, n):
+def clean_solution(graph: Graph, n: int, rf: int):
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
     :param graph: ton objet Graph
-    :param community_assignment: dict {node_id: community_id}
     :param n: seuil de tolérance CV(i)
     :return: nouvelle communauté nettoyée (dict)
     """
-    cleaned_assignment = community_assignment.copy()
-    for vertex in graph.get_vertices().values():
-        neighbors = vertex.get_neighbours()
-        #print(neighbors)
-        if not neighbors:
-            continue  # sommet isolé
-        #print(community_assignment)
-        current_comm = community_assignment[vertex.identifier]
-        # Comptage des communautés des voisins
-        neighbor_comms = [
-            community_assignment[neighbor.identifier] for neighbor in neighbors
-        ]
-        # Calcul de CV(i)
-        neq_count = sum(1 for c in neighbor_comms if c != current_comm)
-        cv_i = neq_count / len(neighbors)
-        # Si CV(i) trop élevé : on remplace par la communauté majoritaire chez les voisins
-        if cv_i > n:
-            most_common_comm = Counter(neighbor_comms).most_common(1)[0][0]
-            cleaned_assignment[vertex.identifier] = most_common_comm
+    pass
     return cleaned_assignment
 
 
-def recombine(xi, vi, CR, graph):
+def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     """
     Recombine deux individus xi (cible) et vi (mutant) selon la stratégie DECD.
 
-    :param xi: dict {node_id: community_id} – solution cible
-    :param vi: dict {node_id: community_id} – solution mutante
+    :param x: solution cible
+    :param v: solution mutante
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
-    :param graph: objet Graph – structure du graphe
-    :return: dict – nouvel individu ui
+    :return: Graph() : nouvel individu u
     """
-    ui = xi.copy()
-    for node in graph.get_vertices():
-        node_id = node
-        if random.random() < CR:
-            # Communauté cible depuis vi
-            new_comm = vi[node_id]
-            # Trouver tous les nœuds dans la même communauté que node_id dans xi
-            old_comm = ui[node_id]
-            same_comm_nodes = [n for n, c in ui.items() if c == old_comm]
-            # Appliquer le changement de communauté à tous ces nœuds
-            for n in same_comm_nodes:
-                ui[n] = new_comm
-    return ui
-
-
-def crossover(X, V, CR):
-    NP = len(X)
-    n = len(X[0])
-    U = [x.copy() for x in X]  # Initialize trial population as copies of current population
-    for i in range(NP):
-        jrand = random.randint(0, n - 1)  # Random index for forced crossover
-        for j in range(n):
-            rand_val = random.random()
-            if rand_val <= CR or j == jrand:
-                vi_j = V[i][j]
-                # Find indices (nodes) in vi assigned to the same community vi_j
-                community_nodes = [k for k in range(n) if V[i][k] == vi_j]
-                # Assign all those positions in ui to community vi_j
-                for k in community_nodes:
-                    U[i][k] = vi_j
-                # Optional: you can add a `break` if you only want to apply the change once
-    return U
+    u = copy(x)
+    sommets = x.get_vertices().values()
+    j_rand = random.randint(0, len(sommets)-1)
+    j = 0
+    sommets_u = u.get_vertices().values()
+    sommets_v = v.get_vertices().values()
+    for node in sommets:
+        if random.random() < CR or j == j_rand:
+            comm_cible = v.get_vertex_comm(node.identifier)
+            id_comm_identique = [noeud.identifier for noeud in sommets_v if noeud.community_id == comm_cible]
+            for n in sommets_u:
+                if n.identifier in id_comm_identique:
+                    n.community_id = comm_cible
+        j += 1
+    return u
 
 
 NP = 200
@@ -161,4 +122,4 @@ nettoyage, NB : le nombre d’itérations
 
 part = initialisation(graphe, 200)
 """clean = clean_solution(graphe, part[0], 0.35)"""
-print(part[0].modularity)
+recombinaison = crossover(graphe, graphe, 0.3)

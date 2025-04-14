@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from networkx.classes import subgraph
 
 
@@ -49,6 +51,12 @@ class Vertex:
         """
         return len(self.edges)
 
+    @property
+    def community_variance(self) -> float:
+        voisins = self.get_neighbours()
+        neq = len([voisin for voisin in voisins if voisin.community_id != self.community_id])
+        return neq/self.degree
+
     def __repr__(self) -> str:
         return f"Vertex({self.identifier})"
 
@@ -74,6 +82,9 @@ class Graph:
         :return: The vertex
         """
         return self._vertices[identifier]
+
+    def get_vertex_comm(self, identifier: int) -> int:
+        return self.get_vertex(identifier).community_id
 
     def get_edge(self, identifier: int) -> Edge:
         """
