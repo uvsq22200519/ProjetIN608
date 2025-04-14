@@ -2,6 +2,7 @@ import random
 from copy import copy
 import numpy as np
 from classes_graph import Graph
+import time
 
 graphe = Graph()
 
@@ -70,8 +71,10 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
                 v[i] = (2 * lower_bound) - v[i]
             elif v[i] > upper_bound:
                 v[i] = (2 * upper_bound) - v[i]
+        mutant = population[j].__copy__()
+        mutant.import_genotype(v)
+        pop_mutante.append(mutant)
         j += 1
-        pop_mutante.append(v)
     return pop_mutante
 
 
@@ -85,14 +88,15 @@ def clean_solution(graph: Graph, seuil: int) -> None:
     for node in nodes:
         if random.random() < 0.1:
             if node.community_variance > seuil:
-                neighborhood = {}
-                for neighbor in node.get_neighbours():
-                    if neighbor.community_id in neighborhood.keys():
-                        neighborhood[neighbor.community_id] += 1
+                neighborhood_commid = {}
+                neighborhood = node.get_neighbours()
+                for neighbor in neighborhood:
+                    if neighbor.community_id in neighborhood_commid.keys():
+                        neighborhood_commid[neighbor.community_id] += 1
                     else:
-                        neighborhood[neighbor.community_id] = 1
-                comm_major = max(neighborhood, key=neighborhood.get)
-                for neighbor in neighborhood.values():
+                        neighborhood_commid[neighbor.community_id] = 1
+                comm_major = max(neighborhood_commid, key=neighborhood_commid.get)
+                for neighbor in neighborhood:
                     neighbor.community_id = comm_major
     return
 
@@ -137,10 +141,11 @@ def DECD(graph):
     NB = 200
     t = 0
     P = initialisation(graphe, NP)
-    Qx, Qu = [], []
+    Qx, Qu = [], [None for _ in range(NB)]
     for i in range(NP):
         Qx.append(P[i].modularity)
     while t < NB:
+        print('gération', t)
         V = mutation(P, F)
         for i in range(len(V)):
             clean_solution(V[i], n)
