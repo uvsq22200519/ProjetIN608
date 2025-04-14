@@ -100,14 +100,14 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     """
     Recombine deux individus xi (cible) et vi (mutant) selon la stratégie DECD.
 
-    :param x: solution cible
+    :param x: Solution cible
     :param v: solution mutante
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
     :return: Graph() : nouvel individu u
     """
     u = copy(x)
     sommets = x.get_vertices()
-    j_rand = random.randint(0, len(sommets)-1)
+    j_rand = random.randint(0, len(sommets) - 1)
     j = 0
     sommets_u = u.get_vertices()
     sommets_v = v.get_vertices()
@@ -122,44 +122,41 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     return u
 
 
-NP = 200
-t = 0
-QX = []
-QU = []
-F = 0.9
-CR = 0.3
-n = 0.35
-NB = 200
-P = initialisation(graphe, NP)
-"""for i in range(1, NP):
-    QX[i] = modularity(P[i])
-while t < NB:
-    V = mutation(P, F)
-    V = nettoyage(V, n)
-    U = recombine(P)
-    U = nettoyage(U, n)
-    for i in range(1,NP):
-        QU[i] = modularity(U[i])
-        if QX[i] > QU[i]:
-            P[i] = xi
-        else:
-            P[i] = ui
-    t += 1
-Xbest = P[1]
-for i in range(2, NP):
-    if modularite(Xbest) < modularite(P[i]):
-        Xbest = P[i]
-"""
-
-"""
-Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
-rand/1, CR : la probabilité de croisement pour le
-croisement binomiale de solution, η : le seuil pour le
-nettoyage, NB : le nombre d’itérations
-"""
+def DECD():
+    """
+     Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
+     rand/1, CR : la probabilité de croisement pour le
+     croisement binomiale de solution, η : le seuil pour le
+     nettoyage, NB : le nombre d’itérations
+    """
+    NP = 200
+    F = 0.9
+    CR = 0.3
+    n = 0.35
+    NB = 200
+    t = 0
+    P = initialisation(graphe, NP)
+    Qx, Qu = [], []
+    for i in range(NP):
+        Qx[i] = P[i].modularity
+    while t < NB:
+        V = mutation(P, F)
+        for i in range(len(V)):
+            clean_solution(V[i], n)
+            crossover(V[i], P[i], CR)
+            clean_solution(V[i], n)
+        for i in range(NP):
+            Qu[i] = V[i].modularity
+            if Qx[i] <= Qu[i]:
+                P[i] = V[i]
+        t += 1
+    Xbest = P[0]
+    for i in range(1, NP):
+        if Xbest.modularity < P[i].modularity:
+            Xbest = P[i]
 
 
 part = initialisation(graphe, 200)
 """clean = clean_solution(graphe, part[0], 0.35)"""
 clean_solution(graphe, 50)
-#recombinaison = crossover(graphe, graphe, 0.3)
+# recombinaison = crossover(graphe, graphe, 0.3)
