@@ -2,9 +2,10 @@ import random
 from copy import copy
 import numpy as np
 from classes_graph import Graph
+import networkx as nx
 import time
 
-graphe = Graph()
+graphe = nx.Graph()
 
 with open("interaction_extraite_gavin2006.txt", 'r') as file:
     line = file.readline()
@@ -14,35 +15,34 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         line = line.split('\t')
         id1 = line[0]
         id2 = line[1]
-        v1 = graphe.add_vertex(id1)
-        v2 = graphe.add_vertex(id2)
-        graphe.add_edge(v1, v2)
+        graphe.add_edge(id1, id2)
         lines.append(line[0])
         lines.append(line[1])
         line = file.readline()
 
 
-def initialisation(graph: Graph, num_individuals: int) -> list:
+def initialisation(graph: nx.Graph, num_individuals: int) -> list[dict[str: int]]:
     """
     Génère la population initiale P0 pour l'algorithme DECD.
-    :param graph: le graphe d'intéraction
+    :param graph: le graphe traité
     :param num_individuals: nombre d'individus (partitions) à générer
-    :return: liste d'individus (chaque individu = Graph)
+    :return: liste d'individus représentés sous la forme d'un dictionnaire avec en clé le gène et en valeur son allèle
     """
     start = time.time()
     population = []
-    max_comm_id = len(graph.get_vertices())  # la valeur max pour la num de communauté est le nb de sommet
+    max_comm_id = len(graph.edges)  # la valeur max pour la num de communauté est le nb de sommet
+    # création des individus
     for _ in range(num_individuals):
-        new_graph = copy(graph)
-        vertices = new_graph.get_vertices()
-        for v in vertices:
-            v.community_id = random.randint(0, max_comm_id - 1)
-        # 2. Renforcement des communautés par voisinage
-        for v in vertices:
+        individual = {}
+        for v in graph.nodes:
+            community_id = random.randint(0, max_comm_id - 1)
+            individual[v] = community_id
+        # renforcement des communautés par voisinage
+        for v in graph.nodes:
             if random.random() < 0.1:
-                for neighbor in v.get_neighbours():
-                    neighbor.community_id = v.community_id
-        population.append(new_graph)
+                for neighbor in graph.neighbors(v):
+                    individual[neighbor] = individual[v]
+        population.append(individual)
     print(f"Initialisation {time.time()-start}")
     return population
 
@@ -170,7 +170,6 @@ def DECD(graph):
             Xbest = P[i]
     return Xbest
 
-
-DECD(graphe)
+a = initialisation(graphe, 200)
 
 # recombinaison = crossover(graphe, graphe, 0.3)
