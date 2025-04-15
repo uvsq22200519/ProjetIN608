@@ -47,26 +47,25 @@ def initialisation(graph: nx.Graph, num_individuals: int) -> list[dict[str: int]
     return population
 
 
-def mutation(population: list[Graph], f: float) -> list[Graph]:
+def mutation(population: list[dict[str:int]], f: float) -> list[dict[str:int]]:
     """
-
-    :param population:
-    :param f:
-    :return:
+    :param population: la population utilisée pour la mutation
+    :param f: facteur d'échelle pour la mutation
+    :return: une population mutante
     """
     start = time.time()
     pop_mutante = []
     j = 0
     while len(population) != len(pop_mutante):
-        x1 = np.array(random.choice(population).to_genotype())
-        x2 = np.array(random.choice(population).to_genotype())
-        x3 = np.array(random.choice(population).to_genotype())
+        x1 = np.array(list(random.choice(population).values()))
+        x2 = np.array(list(random.choice(population).values()))
+        x3 = np.array(list(random.choice(population).values()))
         while x1.tolist() == x2.tolist() or x2.tolist() == x3.tolist() or x3.tolist() == x1.tolist():
-            x1 = np.array(random.choice(population).to_genotype())
-            x2 = np.array(random.choice(population).to_genotype())
-            x3 = np.array(random.choice(population).to_genotype())
+            x1 = np.array(list(random.choice(population).values()))
+            x2 = np.array(list(random.choice(population).values()))
+            x3 = np.array(list(random.choice(population).values()))
         v = (x1 + f * (x2 - x3)).tolist()
-        genotype_j = population[j].to_genotype()
+        genotype_j = population[j].values()
         lower_bound = min(genotype_j)
         upper_bound = max(genotype_j)
         for i in range(len(v)):
@@ -74,8 +73,11 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
                 v[i] = (2 * lower_bound) - v[i]
             elif v[i] > upper_bound:
                 v[i] = (2 * upper_bound) - v[i]
-        mutant = population[j].__copy__()
-        mutant.import_genotype(v)
+        mutant = copy(population[j])
+        i = 0
+        for node in mutant:
+            mutant[node] = int(v[i])
+            i += 1
         pop_mutante.append(mutant)
         j += 1
     print(f"Mutation {time.time()-start}")
@@ -135,23 +137,22 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     return u
 
 
-def DECD(graph):
+def DECD(graph, NP: int, F:float, CR: float, n: float, NB:int ) -> Graph:
     """
      Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
      rand/1, CR : la probabilité de croisement pour le
      croisement binomiale de solution, η : le seuil pour le
      nettoyage, NB : le nombre d’itérations
     """
-    NP = 200
-    F = 0.9
-    CR = 0.3
-    n = 0.35
-    NB = 200
     t = 0
     P = initialisation(graphe, NP)
     Qx, Qu = [], []
     for i in range(NP):
-        Qx.append(P[i].modularity)
+        community_dict = {}
+        for k, v in P[i].items():
+            community_dict.setdefault(v, set()).add(k)
+        community = list(community_dict.values())
+        Qx.append(nx.community.modularity(graph, community))
     while t < NB:
         print('génération', t)
         V = mutation(P, F)
@@ -170,6 +171,11 @@ def DECD(graph):
             Xbest = P[i]
     return Xbest
 
-a = initialisation(graphe, 200)
+NP = 200
+F = 0.9
+CR = 0.3
+n = 0.35
+NB = 200
+a = DECD(graphe, NP, F, CR, n, NB)
 
 # recombinaison = crossover(graphe, graphe, 0.3)
