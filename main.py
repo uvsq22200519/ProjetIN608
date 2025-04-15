@@ -84,29 +84,33 @@ def mutation(population: list[dict[str:int]], f: float) -> list[dict[str:int]]:
     return pop_mutante
 
 
-def clean_solution(graph: Graph, seuil: int) -> None:
+def clean_solution(graph: nx.Graph, partionement: dict[str:int], seuil: float) -> dict[str:int]:
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
-    :param graph:
+    :param graph: le graphe a traiter
+    :param partionement: la paritionement
     :param seuil:
+    :return: la paritionement nettoyé
     """
     start = time.time()
-    nodes = graph.get_vertices()
+    nodes = graph.nodes
     for node in nodes:
         if random.random() < 0.1:
-            if node.community_variance > seuil:
+            neighbors = list(graph.adj[node])
+            sum_neq = len([neighbor for neighbor in neighbors if partionement[neighbor] != partionement[node]])
+            community_variance = sum_neq / graph.degree[node]
+            if community_variance > seuil:
                 neighborhood_commid = {}
-                neighborhood = node.get_neighbours()
-                for neighbor in neighborhood:
-                    if neighbor.community_id in neighborhood_commid.keys():
-                        neighborhood_commid[neighbor.community_id] += 1
+                for neighbor in neighbors:
+                    if partionement[neighbor] in neighborhood_commid.keys():
+                        neighborhood_commid[partionement[neighbor]] += 1
                     else:
-                        neighborhood_commid[neighbor.community_id] = 1
+                        neighborhood_commid[partionement[neighbor]] = 1
                 comm_major = max(neighborhood_commid, key=neighborhood_commid.get)
-                for neighbor in neighborhood:
-                    neighbor.community_id = comm_major
+                for neighbor in neighbors:
+                    partionement[neighbor] = comm_major
     print(f"Clean {time.time()-start}")
-    return
+    return partionement
 
 
 def crossover(x: Graph, v: Graph, CR: float) -> Graph:
@@ -157,9 +161,9 @@ def DECD(graph, NP: int, F:float, CR: float, n: float, NB:int ) -> Graph:
         print('génération', t)
         V = mutation(P, F)
         for i in range(len(V)):
-            clean_solution(V[i], n)
+            V[i] = clean_solution(graph, V[i], n)
             crossover(V[i], P[i], CR)
-            clean_solution(V[i], n)
+            V[i] = clean_solution(graph, V[i], n)
         for i in range(NP):
             Qu.append(V[i].modularity)
             if Qx[i] <= Qu[i]:
