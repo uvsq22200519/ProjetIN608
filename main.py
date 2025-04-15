@@ -113,7 +113,7 @@ def clean_solution(graph: nx.Graph, partionement: dict[str:int], seuil: float) -
     return partionement
 
 
-def crossover(x: Graph, v: Graph, CR: float) -> Graph:
+def crossover(x: dict[str:int], v: dict[str:int], CR: float) -> dict[str:int]:
     """
     Recombine deux individus xi (cible) et vi (mutant) selon la stratégie DECD.
 
@@ -124,18 +124,18 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     """
     start = time.time()
     u = copy(x)
-    sommets = x.get_vertices()
+    sommets = x.keys()
     j_rand = random.randint(0, len(sommets) - 1)
     j = 0
-    sommets_u = u.get_vertices()
-    sommets_v = v.get_vertices()
+    sommets_u = u.keys()
+    sommets_v = v.keys()
     for node in sommets:
         if random.random() < CR or j == j_rand:
-            comm_cible = v.get_vertex_comm(node.identifier)
-            id_comm_identique = [noeud.identifier for noeud in sommets_v if noeud.community_id == comm_cible]
+            comm_cible = v[node]
+            id_comm_identique = [noeud for noeud in sommets_v if v[noeud] == comm_cible]
             for n in sommets_u:
-                if n.identifier in id_comm_identique:
-                    n.community_id = comm_cible
+                if n in id_comm_identique:
+                    u[n] = comm_cible
         j += 1
     print(f"Crossover {time.time()-start}")
     return u
@@ -160,14 +160,15 @@ def DECD(graph, NP: int, F:float, CR: float, n: float, NB:int ) -> Graph:
     while t < NB:
         print('génération', t)
         V = mutation(P, F)
+        U = [None for _ in range(NP)]
         for i in range(len(V)):
             V[i] = clean_solution(graph, V[i], n)
-            crossover(V[i], P[i], CR)
-            V[i] = clean_solution(graph, V[i], n)
+            U[i] = crossover(P[i], V[i], CR)
+            U[i] = clean_solution(graph, U[i], n)
         for i in range(NP):
-            Qu.append(V[i].modularity)
+            Qu.append(nx.community.modularity(graph, U[i]))
             if Qx[i] <= Qu[i]:
-                P[i] = V[i]
+                P[i] = U[i]
         t += 1
     Xbest = P[0]
     for i in range(1, NP):
