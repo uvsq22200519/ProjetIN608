@@ -1,5 +1,5 @@
 from typing import Tuple
-
+import networkx as nx
 from networkx.classes import subgraph
 
 
@@ -186,33 +186,18 @@ class Graph:
         Calculate the modularity of a graph.
         :param graph:
         """
-        modularity = 0
+        g = nx.Graph()
+        for edge in self.get_edges():
+            g.add_edge(edge.vertex1.identifier, edge.vertex2.identifier)
         communities = {}
-        vertices = list(self.get_vertices())
+        vertices = self.get_vertices()
         for v in vertices:
             comm_id = v.community_id
             if comm_id not in communities:
                 communities[comm_id] = set()
             communities[comm_id].add(v)
-        if len(self.get_edges()) == 0:
-            return 1
-        for comm_id, nodes in communities.items():
-            subgraph = Graph()
-            for node in nodes:
-                subgraph.add_vertex(node)
-            for node in nodes:
-                for neighbor in node.get_neighbours():
-                    if neighbor in nodes:
-                        subgraph.add_edge(node, neighbor)
-            nb_links_module = len(subgraph.get_edges())
-            degree_all_nodes_module = 0
-            for node in nodes:
-                degree_all_nodes_module += node.degree
-            modularity += (
-                    (nb_links_module / len(self.get_edges()))
-                    - ((degree_all_nodes_module / (2 * len(self.get_edges()))) ** 2)
-            )
-        return modularity
+        communautes = [{v.identifier for v in communities[comm_id]} for comm_id in communities]
+        return nx.community.modularity(g, communautes)
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self._edges)} edges)"

@@ -138,14 +138,13 @@ def DECD(graph):
     F = 0.9
     CR = 0.3
     n = 0.35
-    NB = 200
+    NB = 0
     t = 0
     P = initialisation(graphe, NP)
-    Qx, Qu = [], [None for _ in range(NB)]
+    Qx, Qu = [], [None for _ in range(NP)]
     for i in range(NP):
         Qx.append(P[i].modularity)
     while t < NB:
-        print('gération', t)
         V = mutation(P, F)
         for i in range(len(V)):
             clean_solution(V[i], n)
@@ -160,8 +159,7 @@ def DECD(graph):
     for i in range(1, NP):
         if Xbest.modularity < P[i].modularity:
             Xbest = P[i]
-    print(Xbest)
-    print(Xbest.modularity)
+    return Xbest
 
 
 DECD(graphe)
