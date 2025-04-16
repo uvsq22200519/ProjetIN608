@@ -119,7 +119,7 @@ class Graph:
         vertex1.edges.append(edge)
         vertex2.edges.append(edge)
         self._edges.append(edge)
-        self.networkx_graph.add_edge(vertex1, vertex2)
+        self.networkx_graph.add_edge(vertex1.identifier, vertex2.identifier)
         return edge
 
     def add_vertex(self, identifier: str=None, comm_id: int|None = None) -> Vertex:

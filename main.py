@@ -149,9 +149,8 @@ def DECD(graph):
     NB = 200
     t = 0
     P = initialisation(graphe, NP)
-    Qx, Qu = [], []
-    for i in range(NP):
-        Qx.append(P[i].modularity)
+    print(P[0].modularity)
+    Qx, Qu = [P[i].modularity for i in range(NP)], []
     while t < NB:
         print('génération', t)
         V = mutation(P, F)
