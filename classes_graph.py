@@ -74,6 +74,7 @@ class Graph:
         self._vertices: dict[object, Vertex] = {}
         self._edges: list[Edge] = []
         self.is_directed = is_directed
+        self.networkx_graph = nx.Graph()
 
     def get_vertex(self, identifier: str) -> Vertex:
         """
@@ -118,6 +119,7 @@ class Graph:
         vertex1.edges.append(edge)
         vertex2.edges.append(edge)
         self._edges.append(edge)
+        self.networkx_graph.add_edge(vertex1, vertex2)
         return edge
 
     def add_vertex(self, identifier: str=None, comm_id: int|None = None) -> Vertex:
@@ -186,9 +188,7 @@ class Graph:
         Calculate the modularity of a graph.
         :param graph:
         """
-        g = nx.Graph()
-        for edge in self.get_edges():
-            g.add_edge(edge.vertex1.identifier, edge.vertex2.identifier)
+        g = self.networkx_graph
         communities = {}
         vertices = self.get_vertices()
         for v in vertices:
