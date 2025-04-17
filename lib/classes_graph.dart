@@ -77,18 +77,17 @@ class Graph {
   double get modularity {
     double modularity = 0;
     Map<int, Set<Vertex>> communities = {};
-    List<Vertex> vertices = [for (Vertex vertex in this.vertices) vertex];
     for (Vertex v in vertices) {
       int commid = v.communityId!;
-      if (communities.containsKey(commid)) {
+      if (!communities.containsKey(commid)) {
         communities[commid] = Set<Vertex>();
       }
       communities[commid]!.add(v);
-  }
+    }
     for (MapEntry<int, Set<Vertex>> me in communities.entries) {
       Graph subgraph = Graph();
       for (Vertex vertex in me.value) {
-        subgraph.addVertex(vertex.identifier);
+        subgraph.addVertex(vertex.identifier).communityId = vertex.communityId;
       }
       for (Vertex vertex in me.value){
         for (Vertex neighbour in vertex.neighbours){
