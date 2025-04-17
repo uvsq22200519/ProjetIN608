@@ -2,7 +2,10 @@ import random
 from copy import copy
 import numpy as np
 from classes_graph import Graph
+import threading
 import time
+import sysconfig
+import sys
 
 graphe = Graph()
 
@@ -118,7 +121,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
     :return: Graph() : nouvel individu u
     """
-    start = time.time()
+    #start = time.time()
     u = copy(x)
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
@@ -133,7 +136,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
                 if n.identifier in id_comm_identique:
                     n.community_id = comm_cible
         j += 1
-    print(f"Crossover {time.time()-start}")
+    #print(f"Crossover {time.time()-start}")
     return u
 
 
@@ -150,20 +153,43 @@ def DECD(graph):
     n = 0.35
     NB = 10
     t = 0
+    py_version = float(".".join(sys.version.split()[0].split(".")[0:2]))
+    status = sysconfig.get_config_var("Py_GIL_DISABLED")
+
+    if py_version >= 3.13:
+        status = sys._is_gil_enabled()
+    if status is None:
+        print("GIL cannot be disabled for Python version <= 3.12")
+    if status == 0:
+        print("GIL is currently disabled")
+    if status == 1:
+        print("GIL is currently active")
+
     P = initialisation(graphe, NP)
     print(P[0].modularity)
     Qx, Qu = [P[i].modularity for i in range(NP)], []
     while t < NB:
         print('génération', t)
+        start = time.time()
         V = mutation(P, F)
-        for i in range(len(V)):
+
+        def thread_function(i, V, P, CR, n):
             clean_solution(V[i], n)
             crossover(V[i], P[i], CR)
             clean_solution(V[i], n)
+
+        threads = [threading.Thread(target=thread_function, args=(i, V, P, CR, n)) for i in range(NP)]
+
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
+
         for i in range(NP):
             Qu.append(V[i].modularity)
             if Qx[i] <= Qu[i]:
                 P[i] = V[i]
+        print(f"temps eneration {t} : {time.time()-start}")
         t += 1
     Xbest = P[0]
     for i in range(1, NP):
@@ -171,7 +197,8 @@ def DECD(graph):
             Xbest = P[i]
     return Xbest
 
+if __name__ == "__main__":
 
-print(DECD(graphe).modularity)
+    print("modularité de la solution finale :", DECD(graphe).modularity)
 
 # recombinaison = crossover(graphe, graphe, 0.3)
