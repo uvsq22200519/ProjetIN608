@@ -3,6 +3,7 @@ from copy import copy
 import numpy as np
 from classes_graph import Graph
 import time
+from multiprocessing.dummy import Pool
 
 graphe = Graph()
 
@@ -118,7 +119,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
     :return: Graph() : nouvel individu u
     """
-    start = time.time()
+    #start = time.time()
     u = copy(x)
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
@@ -133,45 +134,48 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
                 if n.identifier in id_comm_identique:
                     n.community_id = comm_cible
         j += 1
-    print(f"Crossover {time.time()-start}")
+    #print(f"Crossover {time.time()-start}")
     return u
 
 
-def DECD(graph):
+def process_individual(i, v_i, p_i, cr, n):
+    clean_solution(v_i, n)
+    crossover(v_i, p_i, cr)
+    clean_solution(v_i, n)
+    return v_i  # si besoin de récupérer le résultat
+
+def DECD(graph: Graph, np: int, f: float, cr: float, n: float, nb: int) -> Graph:
     """
      Entrée : NPi : le nombre d’individus, F : facteur d’échelle pour
      rand/1, CR : la probabilité de croisement pour le
      croisement binomiale de solution, η : le seuil pour le
      nettoyage, NB : le nombre d’itérations
     """
-    NP = 200
-    F = 0.9
-    CR = 0.3
-    n = 0.35
-    NB = 10
     t = 0
-    P = initialisation(graphe, NP)
+    P = initialisation(graph, np)
     print(P[0].modularity)
-    Qx, Qu = [P[i].modularity for i in range(NP)], []
-    while t < NB:
+    Qx, Qu = [P[i].modularity for i in range(np)], []
+    while t < nb:
         print('génération', t)
-        V = mutation(P, F)
-        for i in range(len(V)):
-            clean_solution(V[i], n)
-            crossover(V[i], P[i], CR)
-            clean_solution(V[i], n)
-        for i in range(NP):
+        start = time.time()
+        V = mutation(P, f)
+
+        with Pool(np) as pool:
+            V = pool.starmap(process_individual, [(i, V[i], P[i], cr, n) for i in range(np)])
+
+        for i in range(np):
             Qu.append(V[i].modularity)
             if Qx[i] <= Qu[i]:
                 P[i] = V[i]
+        print('temps de traitement génération',t, time.time() - start)
         t += 1
+
     Xbest = P[0]
-    for i in range(1, NP):
+    for i in range(1, np):
         if Xbest.modularity < P[i].modularity:
             Xbest = P[i]
     return Xbest
 
 
-print(DECD(graphe).modularity)
+print(DECD(graphe, 200, 0.9, 0.3, 0.35, 10).modularity)
 
-# recombinaison = crossover(graphe, graphe, 0.3)
