@@ -9,7 +9,8 @@ graphe = Graph()
 with open("interaction_extraite_gavin2006.txt", 'r') as file:
     line = file.readline()
     lines = []
-    while line:
+    i = 0
+    while line or i < 100:
         line = line.strip('\n')
         line = line.split('\t')
         id1 = line[0]
@@ -20,6 +21,7 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[0])
         lines.append(line[1])
         line = file.readline()
+        i += 1
 
 
 def initialisation(graph: Graph, num_individuals: int) -> list:
@@ -88,7 +90,7 @@ def clean_solution(graph: Graph, seuil: int) -> None:
     :param graph:
     :param seuil:
     """
-    start = time.time()
+    #start = time.time()
     nodes = graph.get_vertices()
     for node in nodes:
         if random.random() < 0.1:
@@ -103,7 +105,7 @@ def clean_solution(graph: Graph, seuil: int) -> None:
                 comm_major = max(neighborhood_commid, key=neighborhood_commid.get)
                 for neighbor in neighborhood:
                     neighbor.community_id = comm_major
-    print(f"Clean {time.time()-start}")
+    #print(f"Clean {time.time()-start}")
     return
 
 
@@ -146,7 +148,7 @@ def DECD(graph):
     F = 0.9
     CR = 0.3
     n = 0.35
-    NB = 200
+    NB = 10
     t = 0
     P = initialisation(graphe, NP)
     print(P[0].modularity)
@@ -170,6 +172,6 @@ def DECD(graph):
     return Xbest
 
 
-DECD(graphe)
+print(DECD(graphe).modularity)
 
 # recombinaison = crossover(graphe, graphe, 0.3)

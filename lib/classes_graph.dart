@@ -10,7 +10,7 @@ class Vertex {
   List<Edge> edges = [];
   List<Vertex> neighbours = [];
   Object identifier;
-  int communityId = -1;
+  int? communityId;
 
   Vertex(this.identifier);
 
@@ -79,15 +79,31 @@ class Graph {
     Map<int, Set<Vertex>> communities = {};
     List<Vertex> vertices = [for (Vertex vertex in this.vertices) vertex];
     for (Vertex v in vertices) {
-      int commid = v.communityId;
+      int commid = v.communityId!;
       if (communities.containsKey(commid)) {
         communities[commid] = Set<Vertex>();
       }
       communities[commid]!.add(v);
   }
-    for (int comm_id, Vertex node) {
-
+    for (MapEntry<int, Set<Vertex>> me in communities.entries) {
+      Graph subgraph = Graph();
+      for (Vertex vertex in me.value) {
+        subgraph.addVertex(vertex.identifier);
+      }
+      for (Vertex vertex in me.value){
+        for (Vertex neighbour in vertex.neighbours){
+          if (me.value.contains(neighbour)){
+            subgraph.addEdge(subgraph.getVertex(vertex.identifier), subgraph.getVertex(neighbour.identifier));
+          }
+        }
+      }
+      int nb_links_module = subgraph.edges.length;
+      int degree_all_nodes_module = 0;
+      for (Vertex vertex in me.value) {
+        degree_all_nodes_module += vertex.degree;
+      }
+      modularity += ((nb_links_module/this.edges.length) - ((degree_all_nodes_module)/2*this.edges.length)*(degree_all_nodes_module/2*this.edges.length));
     }
-
-
+    return modularity;
+    }
 }
