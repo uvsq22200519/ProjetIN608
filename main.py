@@ -153,7 +153,6 @@ def DECD(graph: Graph, np: int, f: float, cr: float, n: float, nb: int) -> Graph
     """
     t = 0
     P = initialisation(graph, np)
-    print(P[0].modularity)
     Qx, Qu = [P[i].modularity for i in range(np)], []
     while t < nb:
         print('génération', t)
