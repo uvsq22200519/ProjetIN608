@@ -124,15 +124,21 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
     j = 0
+    start = time.time()
     sommets_u = u.get_vertices()
     sommets_v = v.get_vertices()
+    #print("temps recupération sommets", time.time()-start)
     for node in sommets:
         if random.random() < CR or j == j_rand:
             comm_cible = v.get_vertex_comm(node.identifier)
+            start = time.time()
             id_comm_identique = [noeud.identifier for noeud in sommets_v if noeud.community_id == comm_cible]
+            #print("temps recupération id_comm_identique", time.time()-start)
+            start = time.time()
             for n in sommets_u:
                 if n.identifier in id_comm_identique:
                     n.community_id = comm_cible
+            #print("temps changement id_comm_identique", time.time()-start)
         j += 1
     #print(f"Crossover {time.time()-start}")
     return u
@@ -149,7 +155,7 @@ def DECD(graph):
     F = 0.9
     CR = 0.3
     n = 0.35
-    NB = 1
+    NB = 200
     t = 0
     P = initialisation(graph, NP)
     print(P[0].modularity)
@@ -159,7 +165,7 @@ def DECD(graph):
         V = mutation(P, F)
         for i in range(len(V)):
             clean_solution(V[i], n)
-            crossover(V[i], P[i], CR)
+            Qu[i] = crossover(V[i], P[i], CR)
             clean_solution(V[i], n)
         for i in range(NP):
             Qu.append(V[i].modularity)
