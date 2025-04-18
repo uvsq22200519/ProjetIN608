@@ -158,8 +158,13 @@ def DECD(graph):
     NB = 200
     t = 0
     P = initialisation(graph, NP)
-    print(P[0].modularity)
     Qx, Qu = [P[i].modularity for i in range(NP)], []
+    Xbest = P[0]
+    for i in range(1, NP):
+        if Xbest.modularity < P[i].modularity:
+            Xbest = P[i]
+    with open("evolution_modularite.txt", "a") as f:
+        f.write(f'{Xbest.modularity}\t')
     while t < NB:
         print('génération', t)
         V = mutation(P, F)
