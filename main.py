@@ -170,7 +170,7 @@ def DECD(graph):
             clean_solution(u[i], n)
         for i in range(NP):
             if Qx[i] <= u[i].modularity:
-                P[i] = V[i]
+                P[i] = u[i]
         Xbest = P[0]
         for i in range(1, NP):
             if Xbest.modularity < P[i].modularity:
