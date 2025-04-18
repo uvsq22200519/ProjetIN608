@@ -72,10 +72,11 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
         lower_bound = min(genotype_j)
         upper_bound = max(genotype_j)
         for i in range(len(v)):
+            v[i] = int(v[i])
             if v[i] < lower_bound:
-                v[i] = (2 * lower_bound) - v[i]
+                v[i] = int((2 * lower_bound) - v[i])
             elif v[i] > upper_bound:
-                v[i] = (2 * upper_bound) - v[i]
+                v[i] = int((2 * upper_bound) - v[i])
         mutant = population[j].__copy__()
         mutant.import_genotype(v)
         pop_mutante.append(mutant)
@@ -118,7 +119,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :param CR: float – taux de recombinaison (probabilité de changer de communauté)
     :return: Graph() : nouvel individu u
     """
-    start = time.time()
+    #start = time.time()
     u = copy(x)
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
@@ -133,7 +134,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
                 if n.identifier in id_comm_identique:
                     n.community_id = comm_cible
         j += 1
-    print(f"Crossover {time.time()-start}")
+    #print(f"Crossover {time.time()-start}")
     return u
 
 
@@ -148,9 +149,9 @@ def DECD(graph):
     F = 0.9
     CR = 0.3
     n = 0.35
-    NB = 10
+    NB = 1
     t = 0
-    P = initialisation(graphe, NP)
+    P = initialisation(graph, NP)
     print(P[0].modularity)
     Qx, Qu = [P[i].modularity for i in range(NP)], []
     while t < NB:
@@ -164,14 +165,22 @@ def DECD(graph):
             Qu.append(V[i].modularity)
             if Qx[i] <= Qu[i]:
                 P[i] = V[i]
+        Xbest = P[0]
+        for i in range(1, NP):
+            if Xbest.modularity < P[i].modularity:
+                Xbest = P[i]
+        with open("evolution_modularite.txt", "a") as f:
+            f.write(f'{Xbest.modularity}\t')
         t += 1
     Xbest = P[0]
     for i in range(1, NP):
         if Xbest.modularity < P[i].modularity:
             Xbest = P[i]
+    with open("evolution_modularite.txt", "a") as f:
+        f.write(f'{Xbest.modularity}\n')
+    with open("genotype_final.txt", "a") as f:
+        list_str = [str(v) for v in Xbest.to_genotype()]
+        f.write(f'{' '.join(list_str)}\n')
     return Xbest
 
-
 print(DECD(graphe).modularity)
-
-# recombinaison = crossover(graphe, graphe, 0.3)

@@ -172,7 +172,9 @@ class Graph:
         :param path: The path to the file
         :return: None
         """
-        raise NotImplementedError()
+        with open(path, "a") as f:
+            for edge in self.get_edges():
+                f.write(f'v1: {edge.vertex1.identifier} idcomm1: {edge.vertex1.community_id} v2: {edge.vertex2.identifier} idcomm2: {edge.vertex2.community_id}\n')
 
     def __copy__(self) -> 'Graph':
         new_graph = Graph()
