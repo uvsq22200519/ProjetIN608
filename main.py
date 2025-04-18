@@ -9,8 +9,7 @@ graphe = Graph()
 with open("interaction_extraite_gavin2006.txt", 'r') as file:
     line = file.readline()
     lines = []
-    i = 0
-    while line or i < 100:
+    while line:
         line = line.strip('\n')
         line = line.split('\t')
         id1 = line[0]
@@ -21,7 +20,6 @@ with open("interaction_extraite_gavin2006.txt", 'r') as file:
         lines.append(line[0])
         lines.append(line[1])
         line = file.readline()
-        i += 1
 
 
 def initialisation(graph: Graph, num_individuals: int) -> list:
@@ -51,7 +49,6 @@ def initialisation(graph: Graph, num_individuals: int) -> list:
 
 def mutation(population: list[Graph], f: float) -> list[Graph]:
     """
-
     :param population:
     :param f:
     :return:
@@ -85,7 +82,7 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
     return pop_mutante
 
 
-def clean_solution(graph: Graph, seuil: int) -> Graph:
+def clean_solution(graph: Graph, seuil: float) -> None:
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
     :param graph:
@@ -98,6 +95,7 @@ def clean_solution(graph: Graph, seuil: int) -> Graph:
             if node.community_variance > seuil:
                 neighborhood_commid = {}
                 neighborhood = node.get_neighbours()
+
                 for neighbor in neighborhood:
                     if neighbor.community_id in neighborhood_commid.keys():
                         neighborhood_commid[neighbor.community_id] += 1
@@ -120,12 +118,12 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     :return: Graph() : nouvel individu u
     """
     #start = time.time()
-    u = copy(x)
+    crossover_graph = copy(x)
     sommets = x.get_vertices()
     j_rand = random.randint(0, len(sommets) - 1)
     j = 0
     start = time.time()
-    sommets_u = u.get_vertices()
+    sommets_u = crossover_graph.get_vertices()
     sommets_v = v.get_vertices()
     #print("temps recupération sommets", time.time()-start)
     for node in sommets:
@@ -141,7 +139,7 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
             #print("temps changement id_comm_identique", time.time()-start)
         j += 1
     #print(f"Crossover {time.time()-start}")
-    return u
+    return crossover_graph
 
 
 def DECD(graph):
@@ -151,47 +149,43 @@ def DECD(graph):
      croisement binomiale de solution, η : le seuil pour le
      nettoyage, NB : le nombre d’itérations
     """
-    NP = 200
-    F = 0.9
-    CR = 0.3
+    nb_indiv = 200
+    f = 0.9
+    cr = 0.3
     n = 0.35
-    NB = 200
+    nb_gener = 200
     t = 0
-    P = initialisation(graph, NP)
-    Qx, Qu = [P[i].modularity for i in range(NP)], []
-    Xbest = P[0]
-    for i in range(1, NP):
-        if Xbest.modularity < P[i].modularity:
-            Xbest = P[i]
-    with open("evolution_modularite.txt", "a") as f:
-        f.write(f'{Xbest.modularity}\t')
-    while t < NB:
+    p = initialisation(graph, nb_indiv)
+    qx= [p[i].modularity for i in range(nb_indiv)]
+    with open("evolution_modularite.txt", "a") as file1:
+        file1.write(f'{max(qx)}\t')
+    while t < nb_gener:
         print('génération', t)
-        V = mutation(P, F)
-        u = [None for _ in range(NP)]
-        for i in range(len(V)):
-            clean_solution(V[i], n)
-            u[i] = crossover(V[i], P[i], CR)
+        v = mutation(p, f)
+        u = []
+        for i in range(nb_indiv):
+            clean_solution(v[i], n)
+            u.append(crossover(v[i], p[i], cr))
             clean_solution(u[i], n)
-        for i in range(NP):
-            if Qx[i] <= u[i].modularity:
-                P[i] = u[i]
-        Xbest = P[0]
-        for i in range(1, NP):
-            if Xbest.modularity < P[i].modularity:
-                Xbest = P[i]
-        with open("evolution_modularite.txt", "a") as f:
-            f.write(f'{Xbest.modularity}\t')
+        for i in range(nb_indiv):
+            if qx[i] <= u[i].modularity:
+                p[i] = u[i]
+        xbest = p[0]
+        for i in range(1, nb_indiv):
+            if xbest.modularity < p[i].modularity:
+                xbest = p[i]
+        with open("evolution_modularite.txt", "a") as file2:
+            file2.write(f'{xbest.modularity}\t')
         t += 1
-    Xbest = P[0]
-    for i in range(1, NP):
-        if Xbest.modularity < P[i].modularity:
-            Xbest = P[i]
-    with open("evolution_modularite.txt", "a") as f:
-        f.write(f'{Xbest.modularity}\n')
-    with open("genotype_final.txt", "a") as f:
-        list_str = [str(v) for v in Xbest.to_genotype()]
-        f.write(f'{' '.join(list_str)}\n')
-    return Xbest
+    xbest = p[0]
+    for i in range(1, nb_indiv):
+        if xbest.modularity < p[i].modularity:
+            xbest = p[i]
+    with open("evolution_modularite.txt", "a") as file3:
+        file3.write(f'{xbest.modularity}\n')
+    with open("genotype_final.txt", "a") as file4:
+        list_str = [str(v) for v in xbest.to_genotype()]
+        file4.write(f'{' '.join(list_str)}\n')
+    return xbest
 
 print(DECD(graphe).modularity)

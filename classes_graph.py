@@ -140,9 +140,12 @@ class Graph:
         """
         vertices = self.get_vertices()
         genotype_dict = dict(sorted({vertex.identifier: vertex.community_id for vertex in vertices}.items()))
+        if None in genotype_dict.values():
+            raise ValueError("The graph must be fully labelled")
         return list(genotype_dict.values())
 
-    def import_genotype(self, genotype: list) -> None:
+
+    def import_genotype(self, genotype: list[int]) -> None:
         """
         Change the commID of the vertex according to the genotype. CAUTION: the genotype must be a list of commID
         sorted by the alphabetical order of the vertex identifiers
@@ -179,7 +182,7 @@ class Graph:
     def __copy__(self) -> 'Graph':
         new_graph = Graph()
         for vertex in self.get_vertices():
-            new_graph.add_vertex(vertex.identifier)
+            new_graph.add_vertex(vertex.identifier, vertex.community_id)
         for edge in self.get_edges():
             new_graph.add_edge(new_graph.get_vertex(edge.vertex1.identifier), new_graph.get_vertex(edge.vertex2.identifier))
         return new_graph
