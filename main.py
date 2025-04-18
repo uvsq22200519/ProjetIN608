@@ -156,9 +156,9 @@ def DECD(graph):
     nb_gener = 200
     t = 0
     p = initialisation(graph, nb_indiv)
-    qx= [p[i].modularity for i in range(nb_indiv)]
+    modularity_init= [p[i].modularity for i in range(nb_indiv)]
     with open("evolution_modularite.txt", "a") as file1:
-        file1.write(f'{max(qx)}\t')
+        file1.write(f'{max(modularity_init)}\t')
     while t < nb_gener:
         print('génération', t)
         v = mutation(p, f)
@@ -168,7 +168,7 @@ def DECD(graph):
             u.append(crossover(v[i], p[i], cr))
             clean_solution(u[i], n)
         for i in range(nb_indiv):
-            if qx[i] <= u[i].modularity:
+            if p[i].modularity <= u[i].modularity:
                 p[i] = u[i]
         xbest = p[0]
         for i in range(1, nb_indiv):
