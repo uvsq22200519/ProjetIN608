@@ -85,7 +85,7 @@ def mutation(population: list[Graph], f: float) -> list[Graph]:
     return pop_mutante
 
 
-def clean_solution(graph: Graph, seuil: int) -> None:
+def clean_solution(graph: Graph, seuil: int) -> Graph:
     """
     Fonction de nettoyage basée sur la variance communautaire CV(i).
     :param graph:
@@ -163,13 +163,13 @@ def DECD(graph):
     while t < NB:
         print('génération', t)
         V = mutation(P, F)
+        u = [None for _ in range(NP)]
         for i in range(len(V)):
             clean_solution(V[i], n)
-            Qu[i] = crossover(V[i], P[i], CR)
-            clean_solution(V[i], n)
+            u[i] = crossover(V[i], P[i], CR)
+            clean_solution(u[i], n)
         for i in range(NP):
-            Qu.append(V[i].modularity)
-            if Qx[i] <= Qu[i]:
+            if Qx[i] <= u[i].modularity:
                 P[i] = V[i]
         Xbest = P[0]
         for i in range(1, NP):
