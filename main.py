@@ -189,3 +189,4 @@ def DECD(graph):
     return xbest
 
 print(DECD(graphe).modularity)
+
