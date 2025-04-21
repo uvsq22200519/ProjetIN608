@@ -1,6 +1,4 @@
-from typing import Tuple
 import networkx as nx
-from networkx.classes import subgraph
 
 
 class Edge:
@@ -25,23 +23,11 @@ class Vertex:
         self.edges: list[Edge] = []
         self.identifier = identifier
         self.community_id = community_id
+        self.neighbors: list[Vertex] = []
         self._hash_value = self._calculate_hash()
 
     def _calculate_hash(self):
         return hash(self.identifier)
-
-    def get_neighbours(self) -> list['Vertex']:
-        """
-        Get the neighbours of the vertex
-        :return: The neighbours of the vertex
-        """
-        neighbours = []
-        for edge in self.edges:
-            if edge.vertex1.identifier == self.identifier:
-                neighbours.append(edge.vertex2)
-            else:
-                neighbours.append(edge.vertex1)
-        return neighbours
 
     @property
     def degree(self) -> int:
@@ -53,8 +39,7 @@ class Vertex:
 
     @property
     def community_variance(self) -> float:
-        voisins = self.get_neighbours()
-        neq = len([voisin for voisin in voisins if voisin.community_id != self.community_id])
+        neq = len([neighbor for neighbor in self.neighbors if neighbor.community_id != self.community_id])
         return neq/self.degree
 
     def __repr__(self) -> str:
@@ -70,10 +55,9 @@ class Vertex:
 
 
 class Graph:
-    def __init__(self, is_directed=False):
+    def __init__(self):
         self._vertices: dict[object, Vertex] = {}
-        self._edges: list[Edge] = []
-        self.is_directed = is_directed
+        self.edges: list[Edge] = []
         self.networkx_graph = nx.Graph()
 
     def get_vertex(self, identifier: str) -> Vertex:
@@ -84,30 +68,13 @@ class Graph:
         """
         return self._vertices[identifier]
 
-    def get_vertex_comm(self, identifier: str) -> int:
-        return self.get_vertex(identifier).community_id
-
-    def get_edge(self, identifier: int) -> Edge:
-        """
-        Get an edge by its identifier
-        :param identifier: The identifier of the edge
-        :return: The edge
-        """
-        return self._edges[identifier]
-
-    def get_vertices(self) -> list[Vertex]:
+    @property
+    def vertices(self) -> list[Vertex]:
         """
         Get a copy of the vertices of the graph
         :return: The vertices of the graph
         """
         return list(self._vertices.copy().values())
-
-    def get_edges(self) -> list[Edge]:
-        """
-        Get a copy of the edges of the graph
-        :return: The edges of the graph
-        """
-        return self._edges.copy()
 
     def add_edge(self, vertex1: Vertex, vertex2: Vertex) -> Edge:
         """
@@ -115,10 +82,12 @@ class Graph:
         :param vertex2: Second vertex
         :return: The edge that was added
         """
-        edge = Edge(len(self._edges), vertex1, vertex2)
+        edge = Edge(len(self.edges), vertex1, vertex2)
         vertex1.edges.append(edge)
         vertex2.edges.append(edge)
-        self._edges.append(edge)
+        vertex1.neighbors.append(vertex2)
+        vertex2.neighbors.append(vertex1)
+        self.edges.append(edge)
         self.networkx_graph.add_edge(vertex1.identifier, vertex2.identifier)
         return edge
 
@@ -132,13 +101,14 @@ class Graph:
         self._vertices[identifier] = vertex
         return vertex
 
-    def to_genotype(self) -> list:
+    @property
+    def genotype(self) -> list:
         """
         Return a genotype representation of the graph: a list corresponding to the community of the vertices of the
         graph in the alphabetical order of the vertex identifiers
         :return:
         """
-        vertices = self.get_vertices()
+        vertices = self.vertices
         genotype_dict = dict(sorted({vertex.identifier: vertex.community_id for vertex in vertices}.items()))
         if None in genotype_dict.values():
             raise ValueError("The graph must be fully labelled")
@@ -152,22 +122,13 @@ class Graph:
         :param genotype: list of commID sorted by the alphabetical order of the vertex identifiers
         :return:
         """
-        sorted_vertices = sorted([str(vertex.identifier) for vertex in self.get_vertices()])
+        sorted_vertices = sorted([str(vertex.identifier) for vertex in self.vertices])
         if len(genotype) != len(sorted_vertices):
             raise ValueError("The length of genotype and the number of vertex in the graph must be the same")
         for i in range(len(genotype)):
             vertex = self.get_vertex(sorted_vertices[i])
             vertex.community_id = genotype[i]
 
-
-    @staticmethod
-    def load_file(path):
-        """
-        Load a graph from a file
-        :param path: The path to the file
-        :return: The graph contained in the file
-        """
-        raise NotImplementedError()
 
     def save_to_file(self, path):
         """
@@ -176,14 +137,14 @@ class Graph:
         :return: None
         """
         with open(path, "a") as f:
-            for edge in self.get_edges():
+            for edge in self.edges:
                 f.write(f'v1: {edge.vertex1.identifier} idcomm1: {edge.vertex1.community_id} v2: {edge.vertex2.identifier} idcomm2: {edge.vertex2.community_id}\n')
 
     def __copy__(self) -> 'Graph':
         new_graph = Graph()
-        for vertex in self.get_vertices():
+        for vertex in self.vertices:
             new_graph.add_vertex(vertex.identifier, vertex.community_id)
-        for edge in self.get_edges():
+        for edge in self.edges:
             new_graph.add_edge(new_graph.get_vertex(edge.vertex1.identifier), new_graph.get_vertex(edge.vertex2.identifier))
         return new_graph
 
@@ -191,18 +152,17 @@ class Graph:
     def modularity(self) -> float:
         """
         Calculate the modularity of a graph.
-        :param graph:
         """
         g = self.networkx_graph
         communities = {}
-        vertices = self.get_vertices()
+        vertices = self.vertices
         for v in vertices:
             comm_id = v.community_id
             if comm_id not in communities:
                 communities[comm_id] = set()
             communities[comm_id].add(v)
-        communautes = [{v.identifier for v in communities[comm_id]} for comm_id in communities]
-        return nx.community.modularity(g, communautes)
+        result = [{v.identifier for v in communities[comm_id]} for comm_id in communities]
+        return nx.community.modularity(g, result)
 
     def __repr__(self):
-        return f"Graph({len(self._vertices)} vertices, {len(self._edges)} edges)"
+        return f"Graph({len(self._vertices)} vertices, {len(self.edges)} edges)"
