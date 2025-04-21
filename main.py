@@ -123,7 +123,6 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
     j_rand = random.randint(0, len(sommets) - 1)
     j = 0
     start = time.time()
-    sommets_u = crossover_graph.get_vertices()
     sommets_v = v.get_vertices()
     #print("temps recupération sommets", time.time()-start)
     for node in sommets:
@@ -133,9 +132,8 @@ def crossover(x: Graph, v: Graph, CR: float) -> Graph:
             id_comm_identique = [noeud.identifier for noeud in sommets_v if noeud.community_id == comm_cible]
             #print("temps recupération id_comm_identique", time.time()-start)
             start = time.time()
-            for n in sommets_u:
-                if n.identifier in id_comm_identique:
-                    n.community_id = comm_cible
+            for identifier in id_comm_identique:
+                crossover_graph.get_vertex(identifier).community_id = comm_cible
             #print("temps changement id_comm_identique", time.time()-start)
         j += 1
     #print(f"Crossover {time.time()-start}")
@@ -160,6 +158,7 @@ def DECD(graph):
     with open("evolution_modularite.txt", "a") as file1:
         file1.write(f'{max(modularity_init)}\t')
     while t < nb_gener:
+        start = time.time()
         print('génération', t)
         v = mutation(p, f)
         u = []
@@ -176,6 +175,7 @@ def DECD(graph):
                 xbest = p[i]
         with open("evolution_modularite.txt", "a") as file2:
             file2.write(f'{xbest.modularity}\t')
+        print(time.time() - start)
         t += 1
     xbest = p[0]
     for i in range(1, nb_indiv):
@@ -185,7 +185,7 @@ def DECD(graph):
         file3.write(f'{xbest.modularity}\n')
     with open("genotype_final.txt", "a") as file4:
         list_str = [str(v) for v in xbest.to_genotype()]
-        file4.write(f'{' '.join(list_str)}\n')
+        file4.write(f"{' '.join(list_str)}\n")
     return xbest
 
 print(DECD(graphe).modularity)
