@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class Edge {
   int identifier;
   Vertex vertex1;
@@ -12,7 +14,7 @@ class Vertex {
   Object identifier;
   int? communityId;
 
-  Vertex(this.identifier);
+  Vertex(this.identifier, this.communityId);
 
   int get degree => edges.length;
 
@@ -43,8 +45,8 @@ class Graph {
     return edge;
   }
 
-  Vertex addVertex(identifier) {
-    Vertex vertex = Vertex(identifier);
+  Vertex addVertex(identifier, {int? communityId=null}) {
+    Vertex vertex = Vertex(identifier, communityId);
     _vertices[identifier] = vertex;
     return vertex;
   }
@@ -66,32 +68,32 @@ class Graph {
   Graph get copy {
     Graph newGraph = Graph();
     for (Vertex vertex in vertices) {
-      newGraph.addVertex(vertex.identifier);
+      newGraph.addVertex(vertex.identifier, communityId: vertex.communityId);
     }
     for (Edge edge in edges) {
-      newGraph.addEdge(edge.vertex1, edge.vertex2);
+      newGraph.addEdge(newGraph.getVertex(edge.vertex1.identifier), newGraph.getVertex(edge.vertex2.identifier));
     }
     return newGraph;
   }
 
   double get modularity {
     double modularity = 0;
-    Map<int, Set<Vertex>> communities = {};
-    for (Vertex v in vertices) {
-      int commid = v.communityId!;
+    Map<int, List<Vertex>> communities = {};
+    for (Vertex vertex in vertices) {
+      int commid = vertex.communityId!;
       if (!communities.containsKey(commid)) {
-        communities[commid] = Set<Vertex>();
+        communities[commid] = [];
       }
-      communities[commid]!.add(v);
+      communities[commid]!.add(vertex);
     }
-    for (MapEntry<int, Set<Vertex>> me in communities.entries) {
+    for (MapEntry<int, List<Vertex>> me in communities.entries) {
       Graph subgraph = Graph();
       for (Vertex vertex in me.value) {
-        subgraph.addVertex(vertex.identifier).communityId = vertex.communityId;
+        subgraph.addVertex(vertex.identifier, communityId: vertex.communityId);
       }
-      for (Vertex vertex in me.value){
-        for (Vertex neighbour in vertex.neighbours){
-          if (me.value.contains(neighbour)){
+      for (Vertex vertex in me.value) {
+        for (Vertex neighbour in vertex.neighbours) {
+          if (me.value.contains(neighbour)) {
             subgraph.addEdge(subgraph.getVertex(vertex.identifier), subgraph.getVertex(neighbour.identifier));
           }
         }
@@ -101,7 +103,7 @@ class Graph {
       for (Vertex vertex in me.value) {
         degree_all_nodes_module += vertex.degree;
       }
-      modularity += ((nb_links_module/this.edges.length) - ((degree_all_nodes_module)/2*this.edges.length)*(degree_all_nodes_module/2*this.edges.length));
+      modularity += (nb_links_module/edges.length) - pow(degree_all_nodes_module/(2*edges.length), 2);
     }
     return modularity;
     }

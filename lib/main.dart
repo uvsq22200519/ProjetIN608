@@ -48,22 +48,21 @@ List<Graph> initialisation(Graph graph, int numIndividuals) {
 }
 
 List<Graph> mutation(List<Graph> population, double f) {
-  DateTime start = DateTime.now();
   List<Graph> mutantPopulation = [];
   int j = 0;
   final graphSize = population[0].vertices.length;
   while (population.length != mutantPopulation.length) {
-    List<double> l1 = population[Random().nextInt(population.length)].genotype;
-    List<double> l2 = population[Random().nextInt(population.length)].genotype;
-    List<double> l3 = population[Random().nextInt(population.length)].genotype;
-    while (l1 == l2 || l2 == l3 || l3 == l1) {
-      l1 = population[Random().nextInt(population.length)].genotype;
-      l2 = population[Random().nextInt(population.length)].genotype;
-      l3 = population[Random().nextInt(population.length)].genotype;
+    int r1 = Random().nextInt(population.length);
+    int r2 = Random().nextInt(population.length);
+    int r3 = Random().nextInt(population.length);
+    while (r1 == r2 || r2 == r3 || r3 == r1) {
+      r1 = Random().nextInt(population.length);
+      r2 = Random().nextInt(population.length);
+      r3 = Random().nextInt(population.length);
     }
-    Matrix x1 = Matrix.fromFlattenedList(l1, 1, graphSize);
-    Matrix x2 = Matrix.fromFlattenedList(l2, 1, graphSize);
-    Matrix x3 = Matrix.fromFlattenedList(l3, 1, graphSize);
+    Matrix x1 = Matrix.fromFlattenedList(population[r1].genotype, 1, graphSize);
+    Matrix x2 = Matrix.fromFlattenedList(population[r2].genotype, 1, graphSize);
+    Matrix x3 = Matrix.fromFlattenedList(population[r3].genotype, 1, graphSize);
 
     List<double> v = (x1 + (x2 - x3) * f).row(0);
     List<double> genotypeJ = population[j].genotype;
@@ -82,12 +81,10 @@ List<Graph> mutation(List<Graph> population, double f) {
     mutantPopulation.add(mutant);
     j++;
   }
-  print("Mutation created in ${DateTime.now().difference(start).inMilliseconds} ms");
   return mutantPopulation;
 }
 
 void cleanSolution(Graph graph, double threshold) {
-  DateTime start = DateTime.now();
   for (Vertex vertex in graph.vertices) {
     if (Random().nextDouble() < 0.1) {
       if (vertex.communityVariance > threshold) {
@@ -112,11 +109,9 @@ void cleanSolution(Graph graph, double threshold) {
       }
     }
   }
-  print("Cleaned solution in ${DateTime.now().difference(start).inMilliseconds} ms");
 }
 
 Graph crossover(Graph x, Graph v, double cr) {
-  DateTime start = DateTime.now();
   Graph u = x.copy;
   int jRand = Random().nextInt(x.vertices.length - 1);
   int j = 0;
@@ -124,49 +119,47 @@ Graph crossover(Graph x, Graph v, double cr) {
     if (Random().nextDouble() < cr || j == jRand) {
       int targetCommunity = v.getVertex(vertex.identifier).communityId!;
       Iterable identicalCommunityId = v.vertices.where((Vertex vertex) => vertex.communityId == targetCommunity).map((Vertex vertex) => vertex.identifier);
-      for (Vertex n in u.vertices) {
-        if (identicalCommunityId.contains(n.identifier)) {
-          n.communityId = targetCommunity;
-        }
+      for (String identifier in identicalCommunityId) {
+        u.getVertex(identifier).communityId = targetCommunity;
       }
     }
     j++;
   }
-  print("Crossover created in ${DateTime.now().difference(start).inMilliseconds} ms");
   return u;
 }
 
 Graph decd(Graph graph, int np, double f, double cr, double n, int nb) {
   int t = 0;
   List<Graph> p = initialisation(graph, np);
-  List<double> qx = [for (int i=0; i<np; i++) p[i].modularity];
-  List<double> qu = [];
+  Graph xBest = p[0];
   while (t < nb) {
+    DateTime start = DateTime.now();
     print("Generation $t");
     List<Graph> v = mutation(p, f);
-    for (int i = 0; i < v.length; i++){
-        cleanSolution(v[i], n);
-        Graph test = crossover(v[i], p[i], cr);
-        cleanSolution(v[i], n);
+    List<Graph> u = [];
+    for (int i = 0; i < np; i++){
+      cleanSolution(v[i], n);
+      u.add(crossover(v[i], p[i], cr));
+      cleanSolution(u[i], n);
     }
     for (int i = 0; i < np; i++) {
-        if (qx[i] < v[i].modularity) {
-            p[i] = v[i];
-        }
+      if (p[i].modularity <= u[i].modularity) {
+          p[i] = u[i];
+      }
     }
+    xBest = p[0];
+    for (int i=1;i<nb;i++) {
+      if (xBest.modularity < p[i].modularity) {
+        xBest = p[i];
+      }
+    }
+    print("Generated in ${DateTime.now().difference(start).inMilliseconds}ms with a best modularity of ${xBest.modularity}");
     t += 1;
   }
-    Graph xbest = p[0];
-    for (int i = 1; i < np; i++) {
-        if (xbest.modularity < p[i].modularity) {
-            xbest = p[i];
-        }
-    }
-    return xbest;
+  return xBest;
 }
 
 void main() {
-  // Example usage
   Graph graph = create_graph('interaction_extraite_gavin2006.txt');
-  print(decd(graph, 200, 0.9, 0.3, 0.35, 10).modularity);
-  }
+  print(decd(graph, 200, 0.9, 0.3, 0.35, 200).modularity);
+}
