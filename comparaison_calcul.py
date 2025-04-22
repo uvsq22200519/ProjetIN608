@@ -3,7 +3,7 @@ def affinity(a: list | set, b: list | set) -> float:
     Calculate the affinity between two vectors.
     The affinity is defined as the dot product of the two vectors divided by the product of their magnitudes.
     """
-    return (len(a.union(b)) ** 2) / (len(a) * len(b)) if len(a) * len(b) != 0 else 0
+    return (len(a & b)**2) / (len(a) * len(b))
 
 
 def hit(a: list | set, b: list | set, threshold: float) -> list:
@@ -12,38 +12,39 @@ def hit(a: list | set, b: list | set, threshold: float) -> list:
     """
     hit_list = []
     for i in range(len(a)):
-        if affinity(a[i], b[i]) > threshold:
-            hit_list.append(a)
+        j = 0
+        while j <= len(b)-1 and a[i] not in hit_list:
+            if affinity(a[i], b[j]) > threshold:
+                hit_list.append(a[i])
+            j += 1
     return hit_list
 
 
-def recall(a: list | set, b: list | set) -> float:
+def recall(ref: list | set, pred: list | set, threshold_hit: float) -> float:
     """
     Calculate the recall between two vectors.
     The recall is defined as the number of true positives divided by the sum of true positives and false negatives.
-    :param a: The reference vector.
-    :param b: The vector to compare / predicted vector.
     """
-    return len(hit(a, b)) / len(a) if len(a) != 0 else 0
+    return len(hit(ref, pred, threshold_hit)) / len(ref) if len(ref) != 0 else 0
 
 
-def precision(a: list | set, b: list | set) -> float:
+def precision(pred: list | set, ref: list | set, threshold_hit) -> float:
     """
     Calculate the precision between two vectors.
     The precision is defined as the number of true positives divided by the sum of true positives and false positives.
     :param a: The reference vector.
     :param b: The vector to compare / predicted vector.
     """
-    return len(hit(a, b)) / len(b) if len(b) != 0 else 0
+    return len(hit(pred, ref, threshold_hit)) / len(pred) if len(pred) != 0 else 0
 
 
-def f_measure(a: list | set, b: list | set) -> float:
+def f_measure(pred: list | set, ref: list | set, threshold_hit) -> float:
     """
     Calculate the F-measure between two vectors.
     The F-measure is defined as the harmonic mean of precision and recall.
     :param a: The reference vector.
     :param b: The vector to compare / predicted vector.
     """
-    p = precision(a, b)
-    r = recall(a, b)
+    p = precision(pred, ref, threshold_hit)
+    r = recall(ref, pred, threshold_hit)
     return (2 * p * r) / (p + r) if (p + r) != 0 else 0
