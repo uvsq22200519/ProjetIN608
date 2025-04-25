@@ -61,6 +61,7 @@ class Graph:
         self.networkx_graph = nx.Graph()
         self.vertices = None
 
+
     def get_vertex(self, identifier: str) -> Vertex:
         """
         Get a vertex by its identifier
@@ -97,7 +98,8 @@ class Graph:
         Add a vertex to the graph
         :return: The vertex that was added
         """
-        identifier = identifier
+        if identifier in self._vertices:
+            return self._vertices[identifier]
         vertex = Vertex(identifier, community_id=comm_id)
         self._vertices[identifier] = vertex
         return vertex
@@ -126,8 +128,8 @@ class Graph:
         if len(genotype) != len(self.vertices):
             raise ValueError("The length of genotype and the number of vertex in the graph must be the same")
         for i in range(len(genotype)):
-            vertex = self.get_vertex(self.vertices[i].identifier)
-            vertex.community_id = genotype[i]
+            self.vertices[i].community_id = genotype[i]
+        assert all(v.community_id == genotype[i] for i, v in enumerate(self.vertices))
         return
 
 
