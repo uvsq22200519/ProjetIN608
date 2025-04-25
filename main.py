@@ -1,5 +1,6 @@
 import random
 from copy import copy
+import networkx as nx
 import numpy as np
 from classes_graph import Graph
 import time
@@ -26,7 +27,7 @@ def load_graph() -> Graph:
             lines.append(line[0])
             lines.append(line[1])
             line = file.readline()
-    graph.set_pos_vertices()
+    graph.vertices = graph.get_sorted_vertices
     return graph
 
 
@@ -121,6 +122,15 @@ def crossover(x: list[int], v: list[int], CR: float) -> list[int]:
         j += 1
     return u
 
+def modularity_for_genotype(graph: Graph, genotype: list[int]) -> float:
+    g = graph.networkx_graph
+    vertices_ids = sorted([v.identifier for v in graph.vertices])
+    communities = {}
+    for i, community_id in enumerate(genotype):
+        node_id = vertices_ids[i]
+        communities.setdefault(community_id, set()).add(node_id)
+    result = list(communities.values())
+    return nx.community.modularity(g, result)
 
 def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, proba_init=0.1, proba_clean=0.1, nb_gener: int = 200, path_mod: str|None = None, path_geno: str|None = None):
     """
@@ -129,9 +139,10 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
      croisement binomiale de solution, η : le seuil pour le
      nettoyage, NB : le nombre d’itérations
     """
+    networkx_graph = graph.networkx_graph
     t = 0
     p = initialisation(graph, nb_indiv, proba_init)
-    modularity_init = [graph.import_genotype(p[i]) for i in range(nb_indiv)]
+    modularity_init = [modularity_for_genotype(graph, p[i]) for i in range(nb_indiv)]
     if path_mod is not None:
         with open(path_mod, "a") as file1:
             file1.write(f'{max(modularity_init)}\t')
@@ -146,12 +157,12 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
             u[i] = clean_solution(graph, u[i], n, proba_clean)
         del v
         for i in range(nb_indiv):
-            if graph.import_genotype(p[i]).modularity <= graph.import_genotype(u[i]).modularity:
+            if modularity_for_genotype(graph, p[i]) <= modularity_for_genotype(graph, u[i]):
                 p[i] = u[i]
         del u
         xbest = p[0]
         for i in range(1, nb_indiv):
-            if graph.import_genotype(xbest).modularity < graph.import_genotype(p[i]).modularity:
+            if modularity_for_genotype(graph, xbest) < modularity_for_genotype(graph, p[i]):
                 xbest = p[i]
         if path_mod is not None:
             with open(path_mod, "a") as file2:
@@ -160,7 +171,7 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
         t += 1
     xbest = p[0]
     for i in range(1, nb_indiv):
-        if graph.import_genotype(xbest).modularity < graph.import_genotype(p[i]).modularity:
+        if modularity_for_genotype(graph, xbest) < modularity_for_genotype(graph, p[i]):
             xbest = p[i]
     if path_mod is not None:
         with open(path_mod, "a") as file3:

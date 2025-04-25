@@ -22,7 +22,6 @@ class Vertex:
     def __init__(self, identifier: str, community_id: int | None = None):
         self.edges: list[Edge] = []
         self.identifier = identifier
-        self.pos = None
         self.community_id = community_id
         self.neighbors: list[Vertex] = []
         self._hash_value = self._calculate_hash()
@@ -60,6 +59,7 @@ class Graph:
         self._vertices: dict[object, Vertex] = {}
         self.edges: list[Edge] = []
         self.networkx_graph = nx.Graph()
+        self.vertices = None
 
     def get_vertex(self, identifier: str) -> Vertex:
         """
@@ -70,7 +70,7 @@ class Graph:
         return self._vertices[identifier]
 
     @property
-    def vertices(self) -> list[Vertex]:
+    def get_sorted_vertices(self) -> list[Vertex]:
         """
         Get a copy of the vertices of the graph in alphabetical order of their identifiers
         :return: The vertices of the graph
@@ -123,13 +123,12 @@ class Graph:
         :param genotype: list of commID sorted by the alphabetical order of the vertex identifiers
         :return:
         """
-        sorted_vertices = sorted([str(vertex.identifier) for vertex in self.vertices])
-        if len(genotype) != len(sorted_vertices):
+        if len(genotype) != len(self.vertices):
             raise ValueError("The length of genotype and the number of vertex in the graph must be the same")
         for i in range(len(genotype)):
-            vertex = self.get_vertex(sorted_vertices[i])
+            vertex = self.get_vertex(self.vertices[i].identifier)
             vertex.community_id = genotype[i]
-        return self
+        return
 
 
     def save_to_file(self, path):
@@ -168,12 +167,3 @@ class Graph:
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self.edges)} edges)"
-
-    def set_pos_vertices(self):
-        """
-        Set the position of the vertices in alphabetical order of their identifiers
-        :return: None
-        """
-        vertices = self.vertices
-        for i, vertex in enumerate(sorted(vertices, key=lambda x: x.identifier)):
-            vertex.pos = i
