@@ -22,6 +22,7 @@ class Vertex:
     def __init__(self, identifier: str, community_id: int | None = None):
         self.edges: list[Edge] = []
         self.identifier = identifier
+        self.pos = None
         self.community_id = community_id
         self.neighbors: list[Vertex] = []
         self._hash_value = self._calculate_hash()
@@ -71,10 +72,10 @@ class Graph:
     @property
     def vertices(self) -> list[Vertex]:
         """
-        Get a copy of the vertices of the graph
+        Get a copy of the vertices of the graph in alphabetical order of their identifiers
         :return: The vertices of the graph
         """
-        return list(self._vertices.copy().values())
+        return sorted(self._vertices.values(), key=lambda x: x.identifier)
 
     def add_edge(self, vertex1: Vertex, vertex2: Vertex) -> Edge:
         """
@@ -115,7 +116,7 @@ class Graph:
         return list(genotype_dict.values())
 
 
-    def import_genotype(self, genotype: list[int]) -> None:
+    def import_genotype(self, genotype: list[int]):
         """
         Change the commID of the vertex according to the genotype. CAUTION: the genotype must be a list of commID
         sorted by the alphabetical order of the vertex identifiers
@@ -128,6 +129,7 @@ class Graph:
         for i in range(len(genotype)):
             vertex = self.get_vertex(sorted_vertices[i])
             vertex.community_id = genotype[i]
+        return self
 
 
     def save_to_file(self, path):
@@ -166,3 +168,12 @@ class Graph:
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self.edges)} edges)"
+
+    def set_pos_vertices(self):
+        """
+        Set the position of the vertices in alphabetical order of their identifiers
+        :return: None
+        """
+        vertices = self.vertices
+        for i, vertex in enumerate(sorted(vertices, key=lambda x: x.identifier)):
+            vertex.pos = i
