@@ -1,3 +1,6 @@
+from networkx.algorithms.bipartite.cluster import average_clustering
+from numpy.ma.extras import average
+
 import comparaison_calcul as comp
 from classes_graph import Graph
 import numpy as np
@@ -46,28 +49,37 @@ def recup_complexes(path: str) -> dict:
 def analyse(path_interaction: str, path_genotype: str, threshold: float):
     graph = create_graph(path_interaction)
     complexes = recup_complexes("donnees_complex.txt")
-
+    communities_len, recalls, precisions, f_scores = [], [], [], []
     with open(path_genotype, 'r') as file:
         for line in file:
-            if not line.strip():
-                continue  # Ignorer les lignes vides
 
             results = [int(commID) for commID in line.strip().split()]
-            graph.import_genotype(results)
+            try:
+                graph.import_genotype(results)
+                # Récupérer les communautés à partir du graphe
+                communities = {}
+                for v in graph.vertices:
+                    comm_id = v.community_id
+                    if comm_id not in communities:
+                        communities[comm_id] = set()
+                    communities[comm_id].add(v.identifier)
 
-            # Récupérer les communautés à partir du graphe
-            communities = {}
-            for v in graph.vertices:
-                comm_id = v.community_id
-                if comm_id not in communities:
-                    communities[comm_id] = set()
-                communities[comm_id].add(v.identifier)
-
-            # Affichage des correspondances au-dessus du seuil
-            recall = comp.recall(list(complexes.values()), list(communities.values()), threshold)
-            precision = comp.precision(list(communities.values()), list(complexes.values()), threshold)
-            f_score = comp.f_measure(list(complexes.values()), list(communities.values()), threshold)
-            print(len(communities), precision, recall, f_score)
+                # Affichage des correspondances au-dessus du seuil
+                recalls.append(comp.recall(list(complexes.values()), list(communities.values()), threshold))
+                precisions.append(comp.precision(list(communities.values()), list(complexes.values()), threshold))
+                f_scores.append(comp.f_measure(list(complexes.values()), list(communities.values()), threshold))
+                communities_len.append(len(communities))
+            except ValueError:
+                communities_len.append('erreur')
+                recalls.append('erreur')
+                precisions.append('erreur')
+                f_scores.append('erreur')
 
 
-analyse("donnes_intéractions.txt", "genotype_final.txt", 0.5)
+        return communities_len, precisions, recalls, f_scores
+
+
+results = analyse("donnes_intéractions.txt", "a", 0.2)
+for i in range(len(results[0])):
+    print(f"Communities: {results[0][i]}, Precision: {results[1][i]}, Recall: {results[2][i]}, F-score: {results[3][i]}")
+print(average(results[0]),average(results[1]), average(results[2]), average(results[3]))
