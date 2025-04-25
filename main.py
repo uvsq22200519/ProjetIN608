@@ -4,6 +4,10 @@ import networkx as nx
 import numpy as np
 from classes_graph import Graph
 import time
+from collections import defaultdict
+import cProfile
+import pstats
+
 
 
 def load_graph() -> Graph:
@@ -36,12 +40,13 @@ def initialisation(graph: Graph, num_individuals: int, proba_init: float) -> lis
     population = []
     vertices = graph.vertices
     max_comm_id = len(vertices)  # la valeur max pour la num de communauté est le nb de sommet
+    index_map = {v: i for i, v in enumerate(vertices)}
     for _ in range(num_individuals):
         new_genotype = [random.randint(1, max_comm_id) for _ in range(len(vertices))]
         for i in range(len(new_genotype)):
             if random.random() < proba_init:
                 for neighbor in vertices[i].neighbors:
-                    new_genotype[vertices.index(neighbor)] = new_genotype[i]
+                    new_genotype[index_map[neighbor]] = new_genotype[i]
         population.append(new_genotype)
     print(f"Initialisation {time.time() - start}")
     return population
@@ -112,25 +117,28 @@ def clean_solution(graph: Graph, gentoype: list[int], seuil: float, proba) -> li
 def crossover(x: list[int], v: list[int], CR: float) -> list[int]:
     u = copy(x)
     j_rand = random.randint(0, len(x) - 1)
-    j = 0
+
+    comm_dict = defaultdict(list)
+    for idx, comm in enumerate(v):
+        comm_dict[comm].append(idx)
+
     for i in range(len(v)):
-        if random.random() < CR or j == j_rand:
+        if random.random() < CR or i == j_rand:
             target_community_id = v[i]
-            pos_comm_identique = [pos for pos in range(len(v)) if v[pos] == target_community_id]
-            for pos in pos_comm_identique:
+            for pos in comm_dict[target_community_id]:
                 u[pos] = target_community_id
-        j += 1
+
     return u
 
 def modularity_for_genotype(graph: Graph, genotype: list[int]) -> float:
     g = graph.networkx_graph
-    vertices_ids = sorted([v.identifier for v in graph.vertices])
-    communities = {}
-    for i, community_id in enumerate(genotype):
-        node_id = vertices_ids[i]
-        communities.setdefault(community_id, set()).add(node_id)
-    result = list(communities.values())
-    return nx.community.modularity(g, result)
+    communities = defaultdict(set)
+
+    for vertex, comm_id in zip(graph.vertices, genotype):
+        communities[comm_id].add(vertex.identifier)
+
+    return nx.community.modularity(g, list(communities.values()))
+
 
 def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, proba_init=0.1, proba_clean=0.1, nb_gener: int = 200, path_mod: str|None = None, path_geno: str|None = None):
     """
@@ -139,13 +147,12 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
      croisement binomiale de solution, η : le seuil pour le
      nettoyage, NB : le nombre d’itérations
     """
-    networkx_graph = graph.networkx_graph
     t = 0
     p = initialisation(graph, nb_indiv, proba_init)
-    modularity_init = [modularity_for_genotype(graph, p[i]) for i in range(nb_indiv)]
+    mod_p = [modularity_for_genotype(graph, g) for g in p]
     if path_mod is not None:
         with open(path_mod, "a") as file1:
-            file1.write(f'{max(modularity_init)}\t')
+            file1.write(f'{max(mod_p)}\t')
     while t < nb_gener:
         start = time.time()
         print('génération', t)
@@ -157,35 +164,37 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
             u[i] = clean_solution(graph, u[i], n, proba_clean)
         del v
         for i in range(nb_indiv):
-            if modularity_for_genotype(graph, p[i]) <= modularity_for_genotype(graph, u[i]):
+            mod_u_i = modularity_for_genotype(graph, u[i])
+            if mod_p[i] <= mod_u_i:
                 p[i] = u[i]
+                mod_p[i] = mod_u_i
         del u
-        xbest = p[0]
-        for i in range(1, nb_indiv):
-            if modularity_for_genotype(graph, xbest) < modularity_for_genotype(graph, p[i]):
-                xbest = p[i]
+        xbest = p[mod_p.index(max(mod_p))]
         if path_mod is not None:
             with open(path_mod, "a") as file2:
-                file2.write(f'{xbest.modularity}\t')
+                file2.write(f'{max(mod_p)}\t')
         print(time.time() - start)
         t += 1
-    xbest = p[0]
-    for i in range(1, nb_indiv):
-        if modularity_for_genotype(graph, xbest) < modularity_for_genotype(graph, p[i]):
-            xbest = p[i]
-    if path_mod is not None:
-        with open(path_mod, "a") as file3:
-            file3.write(f'{xbest.modularity}\n')
     if path_geno is not None:
         with open(path_geno, "a") as file4:
-            list_str = [str(v) for v in xbest.genotype]
+            list_str = [str(v) for v in xbest]
             file4.write(f"{' '.join(list_str)}\n")
     return xbest
 
 
 def main():
     graph = load_graph()
-    print(graph.import_genotype(DECD(graph)).modularity)
+    path_modu = "modularity.txt"
+    path_geno = "genotype.txt"
+    for i in range(5, 45, 5):
+        for j in range(5, 45, 5):
+            for _ in range(5):
+                print(f"proba init: {i/100}, proba_modu: {j/100}")
+                with open(path_modu, "a") as file1:
+                    file1.write(f'proba init: {i/100}, proba_modu: {j/100}\n')
+                with open(path_geno, "a") as file2:
+                    file2.write(f'proba init: {i/100}, proba_modu: {j/100}\n')
+                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=j/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
 
 
 if __name__ == '__main__':

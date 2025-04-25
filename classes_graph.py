@@ -1,5 +1,5 @@
 import networkx as nx
-
+from collections import defaultdict
 
 class Edge:
     def __init__(self, identifier: int, vertex1: 'Vertex', vertex2: 'Vertex'):
@@ -151,19 +151,11 @@ class Graph:
 
     @property
     def modularity(self) -> float:
-        """
-        Calculate the modularity of a graph.
-        """
         g = self.networkx_graph
-        communities = {}
-        vertices = self.vertices
-        for v in vertices:
-            comm_id = v.community_id
-            if comm_id not in communities:
-                communities[comm_id] = set()
-            communities[comm_id].add(v)
-        result = [{v.identifier for v in communities[comm_id]} for comm_id in communities]
-        return nx.community.modularity(g, result)
+        communities = defaultdict(set)
+        for v in self.vertices:
+            communities[v.community_id].add(v.identifier)
+        return nx.community.modularity(g, list(communities.values()))
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self.edges)} edges)"
