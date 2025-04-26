@@ -53,3 +53,11 @@ ggplot(df_long, aes(x = GenLabel, y = Value)) +
 )
 
 dev.off()
+
+#ÉVOLUTION MODULARITÉ AVEC VARIATION PROBA
+#boxplot qui visualise l'évolution de la modularité en variant proba
+png("evolution_modularite_proba_variation.png", width = 800, height = 600, bg = "white")
+probas <- scan("probas_variation_main", nlines = 1)
+ds <- read.table("probas_variation_main", skip = 1)
+boxplot(ds, names = probas, main = "Évolution modularité", xlab = "Variation probabilité", ylab = "Modularité", col = "lightblue",outcol="red", cex.main = 1.7,font.main = 2 )
+dev.off()
