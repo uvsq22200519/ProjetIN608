@@ -181,15 +181,16 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
 
 def main():
     graph = load_graph()
-    path_modu = "modularity_anais.txt"
-    path_geno = "genotype_anais.txt"
-    for i in range(0, 101, 5):
-        with open(path_geno, "a") as file1:
-            file1.write(f"proba_init: {i/100} proba_clean: {i/100}\n")
-        with open(path_modu, "a") as file2:
-            file2.write(f"proba_init: {i/100} proba_clean: {i/100}\n")
-        for _ in range(10):
-            DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=i/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
+    path_modu = "modularity.txt"
+    path_geno = "genotype.txt"
+    for i in range(30, 51, 5):
+        for j in range(5, 50, 5):
+            with open(path_geno, "a") as file1:
+                file1.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
+            with open(path_modu, "a") as file2:
+                file2.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
+            for _ in range(5):
+                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=j/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
 
 
 if __name__ == '__main__':

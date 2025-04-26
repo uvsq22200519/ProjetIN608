@@ -1,6 +1,5 @@
 from networkx.algorithms.bipartite.cluster import average_clustering
 from numpy.ma.extras import average
-
 import comparaison_calcul as comp
 from classes_graph import Graph
 import numpy as np
@@ -26,6 +25,7 @@ def create_graph(path: str) -> Graph:
             lines.append(line[0])
             lines.append(line[1])
             line = file.readline()
+    graphe.vertices = graphe.get_sorted_vertices
     return graphe
 
 def recup_complexes(path: str) -> dict:
