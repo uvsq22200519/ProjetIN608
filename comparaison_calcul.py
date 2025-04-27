@@ -3,7 +3,9 @@ def affinity(a: list | set, b: list | set) -> float:
     Calculate the affinity between two vectors.
     The affinity is defined as the dot product of the two vectors divided by the product of their magnitudes.
     """
-    return (len(a & b)**2) / (len(a) * len(b))
+    a = set(a)
+    b = set(b)
+    return len(a.intersection(b)) / (len(a) * len(b))
 
 
 def hit(a: list | set, b: list | set, threshold: float) -> list:

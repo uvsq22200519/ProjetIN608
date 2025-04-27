@@ -131,7 +131,6 @@ def modularity_for_genotype(graph: Graph, genotype: list[int]) -> float:
 
     for vertex, comm_id in zip(graph.vertices, genotype):
         communities[comm_id].add(vertex.identifier)
-
     return nx.community.modularity(g, list(communities.values()))
 
 
@@ -183,14 +182,49 @@ def main():
     graph = load_graph()
     path_modu = "modularity.txt"
     path_geno = "genotype.txt"
-    for i in range(30, 51, 5):
-        for j in range(5, 50, 5):
+    """for i in range(15, 20, 5):
+        for j in range(35, 51, 5):
             with open(path_geno, "a") as file1:
                 file1.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
             with open(path_modu, "a") as file2:
                 file2.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
             for _ in range(5):
                 DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=j/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
+    """
+    for i in range(5, 51, 5):
+        with open(path_geno, "a") as file1:
+            file1.write(f"proba_init: 0.0 proba_clean: {i/100}\n")
+        with open(path_modu, "a") as file2:
+            file2.write(f"proba_init: 0.0 proba_clean: {i/100}\n")
+        for _ in range(5):
+            DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.0, proba_clean=i/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
+
+    with open(path_geno, "a") as file1:
+        file1.write(f"proba_init: 0.05 proba_clean: 0.50\n")
+    with open(path_modu, "a") as file2:
+        file2.write(f"proba_init: 0.05 proba_clean: 0.50\n")
+    for _ in range(5):
+        DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.05, proba_clean=0.50, nb_gener=200,
+             path_mod=path_modu, path_geno=path_geno)
+
+    for i in range(30, 51, 5):
+        with open(path_geno, "a") as file1:
+            file1.write(f"proba_init: 0.2 proba_clean: {i / 100}\n")
+        with open(path_modu, "a") as file2:
+            file2.write(f"proba_init: 0.2 proba_clean: {i / 100}\n")
+        for _ in range(5):
+            DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.2, proba_clean=i / 100, nb_gener=200,
+                 path_mod=path_modu, path_geno=path_geno)
+
+    for i in range(55, 101, 5):
+        for j in range(5, 51, 5):
+            with open(path_geno, "a") as file1:
+                file1.write(f"proba init {i / 100} proba clean {j / 100}\n")
+            with open(path_modu, "a") as file2:
+                file2.write(f"proba init {i / 100} proba clean {j / 100}\n")
+            for _ in range(5):
+                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i / 100, proba_clean=j / 100, nb_gener=200,
+                     path_mod=path_modu, path_geno=path_geno)
 
 
 if __name__ == '__main__':

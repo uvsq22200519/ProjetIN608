@@ -3,7 +3,9 @@ from numpy.ma.extras import average
 import comparaison_calcul as comp
 from classes_graph import Graph
 import numpy as np
+import copy
 from scipy.optimize import linear_sum_assignment
+from collections import defaultdict
 
 def create_graph(path: str) -> Graph:
     graphe = Graph()
@@ -46,40 +48,90 @@ def recup_complexes(path: str) -> dict:
             line = file.readline()
     return complexes
 
-def analyse(path_interaction: str, path_genotype: str, threshold: float):
-    graph = create_graph(path_interaction)
-    complexes = recup_complexes("donnees_complex.txt")
-    communities_len, recalls, precisions, f_scores = [], [], [], []
-    with open(path_genotype, 'r') as file:
-        for line in file:
+def analyse(graph, complexes, genotype, threshold: float):
 
-            results = [int(commID) for commID in line.strip().split()]
-            try:
-                graph.import_genotype(results)
-                # Récupérer les communautés à partir du graphe
-                communities = {}
-                for v in graph.vertices:
-                    comm_id = v.community_id
-                    if comm_id not in communities:
-                        communities[comm_id] = set()
-                    communities[comm_id].add(v.identifier)
+    try:
+        graph.import_genotype(genotype)
+        # Récupérer les communautés à partir du graphe
+        communities = defaultdict(set)
 
-                # Affichage des correspondances au-dessus du seuil
-                recalls.append(comp.recall(list(complexes.values()), list(communities.values()), threshold))
-                precisions.append(comp.precision(list(communities.values()), list(complexes.values()), threshold))
-                f_scores.append(comp.f_measure(list(complexes.values()), list(communities.values()), threshold))
-                communities_len.append(len(communities))
-            except ValueError:
-                communities_len.append('erreur')
-                recalls.append('erreur')
-                precisions.append('erreur')
-                f_scores.append('erreur')
+        for vertex, comm_id in zip(graph.vertices, genotype):
+            communities[comm_id].add(vertex.identifier)
+
+        # Affichage des correspondances au-dessus du seuil
+        recall = (comp.recall(list(complexes.values()), list(communities.values()), threshold))
+        precision = comp.precision(list(communities.values()), list(complexes.values()), threshold)
+        f_score = comp.f_measure(list(complexes.values()), list(communities.values()), threshold)
+
+    except ValueError:
+        print("Le graphe doit être entièrement étiqueté")
+        return -1, -1, -1, -1
 
 
-        return communities_len, precisions, recalls, f_scores
+    return len(communities), precision, recall, f_score
+
+def create_file_results(path_genotype: str, path_interaction: str, path_complexes: str, path_results: str):
+    graph_orig = create_graph(path_interaction)
+    complexes = recup_complexes(path_complexes)
+
+    output_lines = []  # On accumule ici tout ce qu'on va écrire
+
+    with open(path_genotype, 'r') as file_genotype:
+        line_genotype = file_genotype.readline().strip('\n')
+
+        while line_genotype:
+            if '#' in line_genotype:
+                line_genotype = file_genotype.readline()
+            elif 'proba' in line_genotype:
+                line = line_genotype.split(' ')
+                proba_init = line[2]
+                proba_clean = line[5][:-1]
+                line_genotype = file_genotype.readline()
+            elif line_genotype != '\n':
+                genotypes = []
+                while line_genotype and line_genotype.strip() != '':
+                    line = line_genotype.split(' ')
+                    genotype = [int(i) for i in line if i != '']
+                    genotypes.append(genotype)
+                    line_genotype = file_genotype.readline()
+
+                # Maintenant, on traite tous les génotypes d'un coup
+                for omega in [0.2, 0.5]:
+                    print(f"proba init {proba_init} proba clean {proba_clean} omega {omega}")
+                    output_lines.append(f"proba init {proba_init} proba clean {proba_clean} omega {omega}\n")
+                    len_communities, precisions, recalls, f_scores = [], [], [], []
+
+                    for genotype in genotypes:
+                        graph = copy.deepcopy(graph_orig)  # copie propre du graphe
+                        community_len, precision, recall, f_score = analyse(graph, complexes, genotype, omega)
+                        len_communities.append(community_len)
+                        precisions.append(precision)
+                        recalls.append(recall)
+                        f_scores.append(f_score)
+                        output_lines.append(f"{community_len}\t{precision}\t{recall}\t{f_score}\n")
+
+                    # Moyennes
+                    output_lines.append(
+                        f"moyennes {np.mean(len_communities):.4f}, {np.mean(precisions):.4f}, {np.mean(recalls):.4f}, {np.mean(f_scores):.4f}\n\n"
+                    )
+                line_genotype = file_genotype.readline()
+            else:
+                line_genotype = file_genotype.readline()
+
+    # Maintenant qu'on a tout accumulé, on écrit une seule fois
+    with open(path_results, 'w') as file_results:
+        file_results.write("Communities\tPrecision\tRecall\tF-score\n")
+        file_results.writelines(output_lines)
 
 
-results = analyse("donnes_intéractions.txt", "a", 0.2)
-for i in range(len(results[0])):
-    print(f"Communities: {results[0][i]}, Precision: {results[1][i]}, Recall: {results[2][i]}, F-score: {results[3][i]}")
-print(average(results[0]),average(results[1]), average(results[2]), average(results[3]))
+
+def main():
+    path_interaction = "interaction_extraite_gavin2006.txt"
+    path_genotype = "genotype_proba_total.txt"
+    path_complexes = "donnees_complex.txt"
+    path_results = "results.txt"
+
+    create_file_results(path_genotype, path_interaction, path_complexes, path_results)
+
+if __name__ == "__main__":
+    main()

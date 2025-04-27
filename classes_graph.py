@@ -149,6 +149,7 @@ class Graph:
             new_graph.add_vertex(vertex.identifier, vertex.community_id)
         for edge in self.edges:
             new_graph.add_edge(new_graph.get_vertex(edge.vertex1.identifier), new_graph.get_vertex(edge.vertex2.identifier))
+        new_graph.vertices = self.vertices
         return new_graph
 
     @property
@@ -161,3 +162,6 @@ class Graph:
 
     def __repr__(self):
         return f"Graph({len(self._vertices)} vertices, {len(self.edges)} edges)"
+
+    def __deepcopy__(self, memo):
+        return self.__copy__()
