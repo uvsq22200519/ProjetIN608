@@ -46,6 +46,9 @@ class Graph {
   }
 
   Vertex addVertex(identifier, {int? communityId=null}) {
+    if (_vertices.containsKey(identifier)) {
+      return _vertices[identifier]!;
+    }
     Vertex vertex = Vertex(identifier, communityId);
     _vertices[identifier] = vertex;
     return vertex;
@@ -98,7 +101,7 @@ class Graph {
           }
         }
       }
-      int nb_links_module = subgraph.edges.length;
+      double nb_links_module = subgraph.edges.length /2;
       int degree_all_nodes_module = 0;
       for (Vertex vertex in me.value) {
         degree_all_nodes_module += vertex.degree;

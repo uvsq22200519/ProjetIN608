@@ -2,6 +2,7 @@ import networkx as nx
 import analyse_results as ar
 import classes_graph as cg
 import comparaison_calcul as cc
+import itertools as it
 
 def create_nx_graph():
     nx_graph = nx.Graph()
@@ -93,23 +94,41 @@ def get_asyn_fluid_analysis(nx_graph: nx.Graph, graph: cg.Graph, omega: float):
     return ar.analyse(graph, complexes, genotype, omega)
 
 def get_girvan_newman_analysis(nx_graph: nx.Graph, graph: cg.Graph, omega: float):
-    result = nx.community.girvan_newman(nx_graph)
-    communities1 = {}
-    for index, community in enumerate(result):
-        communities1[index] = community
-    complexes = ar.recup_complexes("donnees_complex.txt")
-    for commid in communities1.keys():
-        for vertex in communities1[commid]:
-            graph.get_vertex(vertex).community_id = commid
-    genotype = graph.genotype
-    return ar.analyse(graph, complexes, genotype, omega)
+    comp = nx.community.girvan_newman(nx_graph)
+    i = 1
+    f_score_max = 0
+    sans_amelioration = 0
+    amelioration = True
+    while amelioration:
+        print(i)
+        result = next(comp)
+        communities1 = {}
+        for index, community in enumerate(result):
+            communities1[index] = community
+        complexes = ar.recup_complexes("donnees_complex.txt")
+        for commid in communities1.keys():
+            for vertex in communities1[commid]:
+                graph.get_vertex(vertex).community_id = commid
+        genotype = graph.genotype
+        stats = ar.analyse(graph, complexes, genotype, omega)
+        if stats[-1] > f_score_max:
+            f_score_max = stats[-1]
+            best_stats = stats
+            sans_amelioration = 0
+        else:
+            sans_amelioration += 1
+            print('pas d\'ameliorations', i)
+            if sans_amelioration == 50:
+                amelioration = False
+        i += 1
+    print(best_stats)
 
 def main():
     nx_graph, graph = create_nx_graph()
-    print(get_naive_modularity_analysis(nx_graph, graph, 0.2))
-    get_label_propagation_analysis(nx_graph, graph, 0.2)
-    print(get_louvain_analysis(nx_graph, graph, 0.2))
-    print(get_asyn_fluid_analysis(nx_graph, graph, 0.2))
+    #print(get_naive_modularity_analysis(nx_graph, graph, 0.2))
+    #get_label_propagation_analysis(nx_graph, graph, 0.2)
+    #print(get_louvain_analysis(nx_graph, graph, 0.2))
+    #print(get_asyn_fluid_analysis(nx_graph, graph, 0.2))
     print(get_girvan_newman_analysis(nx_graph, graph, 0.2))
 
 if __name__ == "__main__":

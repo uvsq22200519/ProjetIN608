@@ -2,8 +2,12 @@ import random
 from copy import copy
 import networkx as nx
 import numpy as np
+from networkx.classes import subgraph
+
 from classes_graph import Graph
 from collections import defaultdict
+import leidenalg as la
+import igraph as ig
 
 
 def load_graph() -> Graph:
@@ -13,7 +17,7 @@ def load_graph() -> Graph:
     """
     graph = Graph()
 
-    with open("interaction_extraite_gavin2006.txt", 'r') as file:
+    with open("prot_utilisables_elimination_absentes.txt", 'r') as file:
         line = file.readline()
         lines = []
         while line:
@@ -133,6 +137,45 @@ def modularity_for_genotype(graph: Graph, genotype: list[int]) -> float:
         communities[comm_id].add(vertex.identifier)
     return nx.community.modularity(g, list(communities.values()))
 
+def coverage_for_genotype(graph: Graph, genotype: list[int]) -> float:
+    g = graph.networkx_graph
+    communities = defaultdict(set)
+
+    for vertex, comm_id in zip(graph.vertices, genotype):
+        communities[comm_id].add(vertex.identifier)
+    return nx.community.partition_quality(g, list(communities.values()))[0]
+
+def performance_for_genotype(graph: Graph, genotype: list[int]) -> float:
+    g = graph.networkx_graph
+    communities = defaultdict(set)
+
+    for vertex, comm_id in zip(graph.vertices, genotype):
+        communities[comm_id].add(vertex.identifier)
+    return nx.community.partition_quality(g, list(communities.values()))[1]
+
+def rb_for_genotype(graph: Graph, genotype: list[int]) -> float:
+    communities = defaultdict(set)
+
+    for vertex, comm_id in zip(graph.vertices, genotype):
+        communities[comm_id].add(vertex.identifier)
+
+    rb_value = 0
+    m = len(graph.edges)
+    for comm in communities.values():
+        kc = 0 # la somme des degrès des noeuds de la communautée
+        mc = 0 #nombre d'arêtes interne de la communauté
+        seen_edges = set()
+        for v in comm:
+            kc += graph.get_vertex(v).degree
+            for neighbor in graph.get_vertex(v).neighbors:
+                if (v, neighbor.identifier) not in seen_edges and (neighbor.identifier, v) not in seen_edges:
+                    mc += 1
+                    seen_edges.add((v, neighbor.identifier))
+        rb_value += mc / ( (kc **2) / (4*m) )
+    return rb_value
+
+def cpm_for_genotype(graph: Graph, genotype: list[int]) -> float:
+    pass
 
 def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, proba_init=0.1, proba_clean=0.1, nb_gener: int = 200, path_mod: str|None = None, path_geno: str|None = None):
     """
@@ -143,7 +186,7 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
     """
     t = 0
     p = initialisation(graph, nb_indiv, proba_init)
-    mod_p = [modularity_for_genotype(graph, g) for g in p]
+    mod_p = [performance_for_genotype(graph, g) for g in p]
     """if path_mod is not None:
         with open(path_mod, "a") as file1:
             file1.write(f'{max(mod_p)}\t')"""
@@ -157,7 +200,7 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
             u[i] = clean_solution(graph, u[i], n, proba_clean)
         del v
         for i in range(nb_indiv):
-            mod_u_i = modularity_for_genotype(graph, u[i])
+            mod_u_i = performance_for_genotype(graph, u[i])
             if mod_p[i] <= mod_u_i:
                 p[i] = u[i]
                 mod_p[i] = mod_u_i
@@ -180,51 +223,17 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
 
 def main():
     graph = load_graph()
-    path_modu = "modularity.txt"
-    path_geno = "genotype.txt"
-    """for i in range(15, 20, 5):
-        for j in range(35, 51, 5):
-            with open(path_geno, "a") as file1:
-                file1.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
-            with open(path_modu, "a") as file2:
-                file2.write(f"proba_init: {i/100} proba_clean: {j/100}\n")
-            for _ in range(5):
-                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=j/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
-    """
+    path_modu = "modularity_perf_no_bruit.txt"
+    path_geno = "genotype_perf_no_bruit.txt"
+
     for i in range(5, 51, 5):
-        with open(path_geno, "a") as file1:
-            file1.write(f"proba_init: 0.0 proba_clean: {i/100}\n")
-        with open(path_modu, "a") as file2:
-            file2.write(f"proba_init: 0.0 proba_clean: {i/100}\n")
-        for _ in range(5):
-            DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.0, proba_clean=i/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
-
-    with open(path_geno, "a") as file1:
-        file1.write(f"proba_init: 0.05 proba_clean: 0.50\n")
-    with open(path_modu, "a") as file2:
-        file2.write(f"proba_init: 0.05 proba_clean: 0.50\n")
-    for _ in range(5):
-        DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.05, proba_clean=0.50, nb_gener=200,
-             path_mod=path_modu, path_geno=path_geno)
-
-    for i in range(30, 51, 5):
-        with open(path_geno, "a") as file1:
-            file1.write(f"proba_init: 0.2 proba_clean: {i / 100}\n")
-        with open(path_modu, "a") as file2:
-            file2.write(f"proba_init: 0.2 proba_clean: {i / 100}\n")
-        for _ in range(5):
-            DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=0.2, proba_clean=i / 100, nb_gener=200,
-                 path_mod=path_modu, path_geno=path_geno)
-
-    for i in range(55, 101, 5):
         for j in range(5, 51, 5):
             with open(path_geno, "a") as file1:
-                file1.write(f"proba init {i / 100} proba clean {j / 100}\n")
+                file1.write(f"\nproba init {i/100} proba clean {j/100}\n")
             with open(path_modu, "a") as file2:
-                file2.write(f"proba init {i / 100} proba clean {j / 100}\n")
+                file2.write(f"\nproba init {i/100} proba clean {j/100}\n")
             for _ in range(5):
-                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i / 100, proba_clean=j / 100, nb_gener=200,
-                     path_mod=path_modu, path_geno=path_geno)
+                DECD(graph, nb_indiv=200, f=0.9, n=0.35, cr=0.3, proba_init=i/100, proba_clean=j/100, nb_gener=200, path_mod=path_modu, path_geno=path_geno)
 
 
 if __name__ == '__main__':
