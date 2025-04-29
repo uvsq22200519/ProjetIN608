@@ -78,7 +78,6 @@ def create_file_results(path_genotype: str, path_interaction: str, path_complexe
 
     with open(path_genotype, 'r') as file_genotype:
         line_genotype = file_genotype.readline().strip('\n')
-
         while line_genotype:
             if '#' in line_genotype:
                 line_genotype = file_genotype.readline()

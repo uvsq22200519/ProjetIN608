@@ -22,7 +22,7 @@ def create_nx_graph():
     graph.vertices = graph.get_sorted_vertices
     return nx_graph, graph
 
-def get_naive_modularity_analysis(nx_graph: nx.Graph, graph: cg.Graph, omega: float):
+def get_greedy_modularity_analysis(nx_graph: nx.Graph, graph: cg.Graph, omega: float):
     result = nx.community.greedy_modularity_communities(nx_graph)
     print('mod', nx.community.modularity(nx_graph, result))
     communities = {i: {elm for elm in result[i]} for i in range(len(result))}
@@ -125,11 +125,11 @@ def get_girvan_newman_analysis(nx_graph: nx.Graph, graph: cg.Graph, omega: float
 
 def main():
     nx_graph, graph = create_nx_graph()
-    #print(get_naive_modularity_analysis(nx_graph, graph, 0.2))
+    print(get_greedy_modularity_analysis(nx_graph, graph, 0.2))
     #get_label_propagation_analysis(nx_graph, graph, 0.2)
     #print(get_louvain_analysis(nx_graph, graph, 0.2))
     #print(get_asyn_fluid_analysis(nx_graph, graph, 0.2))
-    print(get_girvan_newman_analysis(nx_graph, graph, 0.2))
+    #print(get_girvan_newman_analysis(nx_graph, graph, 0.2))
 
 if __name__ == "__main__":
     main()
