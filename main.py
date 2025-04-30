@@ -153,7 +153,7 @@ def performance_for_genotype(graph: Graph, genotype: list[int]) -> float:
         communities[comm_id].add(vertex.identifier)
     return nx.community.partition_quality(g, list(communities.values()))[1]
 
-def rb_for_genotype(graph: Graph, genotype: list[int]) -> float:
+def rb_for_genotype(graph: Graph, genotype: list[int], gamma: float = 1.3) -> float:
     communities = defaultdict(set)
 
     for vertex, comm_id in zip(graph.vertices, genotype):
@@ -171,11 +171,34 @@ def rb_for_genotype(graph: Graph, genotype: list[int]) -> float:
                 if (v, neighbor.identifier) not in seen_edges and (neighbor.identifier, v) not in seen_edges:
                     mc += 1
                     seen_edges.add((v, neighbor.identifier))
-        rb_value += mc / ( (kc **2) / (4*m) )
+        rb_value += mc - (gamma * ( (kc **2) / (4*m) ))
     return rb_value
 
-def cpm_for_genotype(graph: Graph, genotype: list[int]) -> float:
-    pass
+from collections import defaultdict
+
+def cpm_for_genotype(graph: Graph, genotype: list[int], gamma: float = 1.0) -> float:
+    communities = defaultdict(set)
+
+    for vertex, comm_id in zip(graph.vertices, genotype):
+        communities[comm_id].add(vertex.identifier)
+
+    cpm_value = 0
+
+    for comm in communities.values():
+        ec = 0  # nombre d'arêtes internes
+        nc = len(comm)  # nombre de nœuds dans la communauté
+        seen_edges = set()
+        for v in comm:
+            for neighbor in graph.get_vertex(v).neighbors:
+                if neighbor.identifier in comm:  # ✅ ne considérer que les voisins internes
+                    edge = tuple(sorted((v, neighbor.identifier)))
+                    if edge not in seen_edges:
+                        ec += 1
+                        seen_edges.add(edge)
+        cpm_value += ec - gamma * (nc ** 2)
+
+    return -cpm_value
+
 
 def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, proba_init=0.1, proba_clean=0.1, nb_gener: int = 200, path_mod: str|None = None, path_geno: str|None = None):
     """
@@ -186,7 +209,7 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
     """
     t = 0
     p = initialisation(graph, nb_indiv, proba_init)
-    mod_p = [performance_for_genotype(graph, g) for g in p]
+    mod_p = [cpm_for_genotype(graph, g) for g in p]
     """if path_mod is not None:
         with open(path_mod, "a") as file1:
             file1.write(f'{max(mod_p)}\t')"""
@@ -200,7 +223,7 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
             u[i] = clean_solution(graph, u[i], n, proba_clean)
         del v
         for i in range(nb_indiv):
-            mod_u_i = performance_for_genotype(graph, u[i])
+            mod_u_i = cpm_for_genotype(graph, u[i])
             if mod_p[i] <= mod_u_i:
                 p[i] = u[i]
                 mod_p[i] = mod_u_i
@@ -223,8 +246,8 @@ def DECD(graph, nb_indiv: int = 200, f: float = 0.9, n: float = 0.35, cr=0.3, pr
 
 def main():
     graph = load_graph()
-    path_modu = "modularity_perf_no_bruit.txt"
-    path_geno = "genotype_perf_no_bruit.txt"
+    path_modu = "modularity_cpm_no_bruit.txt"
+    path_geno = "genotype_cpm_no_bruit.txt"
 
     for i in range(5, 51, 5):
         for j in range(5, 51, 5):

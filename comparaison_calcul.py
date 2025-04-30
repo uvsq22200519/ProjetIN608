@@ -5,21 +5,21 @@ def affinity(a: list | set, b: list | set) -> float:
     """
     a = set(a)
     b = set(b)
-    return len(a.intersection(b)) / (len(a) * len(b))
+    return (len(a.intersection(b))**2) / (len(a) * len(b))
 
 
-def hit(a: list | set, b: list | set, threshold: float) -> list:
+def hit(source_modules: list[set], target_modules: list[set], threshold: float) -> list[set]:
     """
-    Check if the affinity between two vectors is greater than a threshold.
+    Retourne la liste des modules dans source_modules qui matchent au moins un module de target_modules,
+    selon le seuil d'affinité.
     """
-    hit_list = []
-    for i in range(len(a)):
-        j = 0
-        while j <= len(b)-1 and a[i] not in hit_list:
-            if affinity(a[i], b[j]) > threshold:
-                hit_list.append(a[i])
-            j += 1
-    return hit_list
+    hits = []
+    for sm in source_modules:
+        for tm in target_modules:
+            if affinity(sm, tm) > threshold:
+                hits.append(sm)
+                break  # un seul match suffit
+    return hits
 
 
 def recall(ref: list | set, pred: list | set, threshold_hit: float) -> float:
