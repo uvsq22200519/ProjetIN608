@@ -61,3 +61,11 @@ probas <- scan("probas_variation_main", nlines = 1)
 ds <- read.table("probas_variation_main", skip = 1)
 boxplot(ds, names = probas, main = "Évolution modularité", xlab = "Variation probabilité", ylab = "Modularité", col = "lightblue",outcol="red", cex.main = 1.7,font.main = 2 )
 dev.off()
+
+#ÉVOLUTION F-SCORE AVEC VARIATION PROBA INIT
+#proba init variation
+png("évolution F score sans bruitage à P init ω = 2.png", width = 800, height = 600, bg = "white")
+probas <- scan("f_score_données_graphe", nlines = 1)
+ds <- read.table("f_score_données_graphe", skip = 1)
+boxplot(ds, names = probas, main = "Évolution F score à P init = 0 et ω = 2", xlab = "Variation probabilité P clean", ylab = "F-score", col = "lightblue",outcol="red", cex.main = 1.2,font.main = 2 )
+dev.off()
